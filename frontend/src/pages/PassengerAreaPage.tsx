@@ -13,11 +13,17 @@ import {
   AlertCircle,
   X,
   ShieldCheck,
+  Settings,
+  Bell,
+  Sliders,
+  Save,
+  Check,
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export const PassengerAreaPage: React.FC = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'TICKETS' | 'SETTINGS'>('TICKETS');
   const [user, setUser] = useState<any>(null);
   const [myBookings, setMyBookings] = useState<any[]>([]);
   const [selectedBookingForPlate, setSelectedBookingForPlate] = useState<any>(null);
@@ -27,12 +33,35 @@ export const PassengerAreaPage: React.FC = () => {
   const [plateError, setPlateError] = useState<string | null>(null);
   const [plateSuccess, setPlateSuccess] = useState<string | null>(null);
 
+  // Configurações personalizadas do usuário
+  const [userSettings, setUserSettings] = useState<any>({
+    default_plate: 'BRA2E19',
+    notify_weather_email: true,
+    notify_weather_whatsapp: true,
+    receipt_format: 'DIGITAL_QR',
+    favorite_route: 'Salvador ➔ Mar Grande',
+    auto_checkin: true,
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+
   const loadBookings = async () => {
     try {
       const res = await api.get('/bookings/my-bookings');
       setMyBookings(res.data);
     } catch (err) {
       console.error('Erro ao buscar histórico', err);
+    }
+  };
+
+  const loadUserConfig = async () => {
+    try {
+      const res = await api.get('/auth/me/config');
+      if (res.data?.settings) {
+        setUserSettings(res.data.settings);
+      }
+    } catch {
+      // Usa defaults locais se a rota de config não responder
     }
   };
 
@@ -44,7 +73,23 @@ export const PassengerAreaPage: React.FC = () => {
       setUser({ full_name: 'Ana Costa', email: 'ana@email.com' });
     }
     loadBookings();
+    loadUserConfig();
   }, []);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSettings(true);
+    setSettingsSuccess(false);
+    try {
+      await api.patch('/auth/me/config', { settings: userSettings });
+      setSettingsSuccess(true);
+      setTimeout(() => setSettingsSuccess(false), 3000);
+    } catch (err) {
+      console.error('Erro ao salvar preferências:', err);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('ttnb_token');
@@ -123,23 +168,232 @@ export const PassengerAreaPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Card do Usuário (Figma: Rectangle 22) */}
-        <div className="mt-4 bg-white border border-ttnb-border rounded-md p-3.5 flex items-center space-x-3 shadow-2xs">
-          <div className="w-10 h-10 rounded-full bg-ttnb-teal text-white flex items-center justify-center font-bold text-base shrink-0">
-            {initialLetter}
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-[13px] font-bold text-ttnb-blue truncate">
-              {displayName}
-            </p>
-            <p className="text-[11px] text-[#615f5e] truncate">
-              {user?.email || 'ana@email.com'}
-            </p>
+        {/* Card do Usuário com Papel do Sistema */}
+        <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-xl bg-ttnb-blue text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-xs">
+              {initialLetter}
+            </div>
+            <div className="overflow-hidden">
+              <div className="flex items-center gap-2">
+                <p className="text-[15px] font-extrabold text-ttnb-blue truncate">
+                  {displayName}
+                </p>
+                <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md uppercase">
+                  {user?.roles?.[0] || 'PASSAGEIRO'}
+                </span>
+              </div>
+              <p className="text-[12px] text-slate-500 truncate mt-0.5">
+                {user?.email || 'ana@email.com'}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Card Próxima Viagem ou Lista de Reservas */}
-        <div className="mt-5">
+        {/* Abas: Minhas Passagens vs Configurações do Usuário */}
+        <div className="mt-6 flex border-b border-slate-200 gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('TICKETS')}
+            className={`pb-3 px-4 text-[13px] font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'TICKETS'
+                ? 'border-ttnb-blue text-ttnb-blue'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Minhas Passagens</span>
+            {myBookings.length > 0 && (
+              <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-mono font-bold">
+                {myBookings.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('SETTINGS')}
+            className={`pb-3 px-4 text-[13px] font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'SETTINGS'
+                ? 'border-ttnb-blue text-ttnb-blue'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-ttnb-teal" />
+            <span>Configurações & Parâmetros</span>
+          </button>
+        </div>
+
+        {activeTab === 'SETTINGS' ? (
+          /* PAINEL DE CONFIGURAÇÕES ESPECÍFICAS DO USUÁRIO */
+          <form onSubmit={handleSaveSettings} className="mt-6 space-y-6 animate-fade-in">
+            {/* Bloco 1: Notificações e Alertas de Maré */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <Bell className="w-4 h-4 text-ttnb-teal" />
+                <h3 className="text-[14px] font-bold text-slate-800">
+                  Alertas Meteorológicos e Operacionais
+                </h3>
+              </div>
+
+              <div className="flex items-center justify-between py-1">
+                <div>
+                  <p className="text-[13px] font-semibold text-slate-800">
+                    Avisos de Ressaca e Suspensão por E-mail
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Receba e-mail imediatamente se a Capitania dos Portos suspender viagens.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={!!userSettings.notify_weather_email}
+                  onChange={(e) =>
+                    setUserSettings({ ...userSettings, notify_weather_email: e.target.checked })
+                  }
+                  className="w-4 h-4 text-ttnb-orange accent-ttnb-orange rounded cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-1 border-t border-slate-100 pt-3">
+                <div>
+                  <p className="text-[13px] font-semibold text-slate-800">
+                    Alertas Críticos via WhatsApp / SMS
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Notificação no smartphone para alterações de saída de última hora.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={!!userSettings.notify_weather_whatsapp}
+                  onChange={(e) =>
+                    setUserSettings({ ...userSettings, notify_weather_whatsapp: e.target.checked })
+                  }
+                  className="w-4 h-4 text-ttnb-orange accent-ttnb-orange rounded cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Bloco 2: Veículo Padrão e Trajetos */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <Car className="w-4 h-4 text-ttnb-teal" />
+                <h3 className="text-[14px] font-bold text-slate-800">
+                  Veículo Padrão & Preferências de Viagem
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+                    Placa Padrão Pré-preenchida
+                  </label>
+                  <input
+                    type="text"
+                    value={userSettings.default_plate || ''}
+                    onChange={(e) =>
+                      setUserSettings({
+                        ...userSettings,
+                        default_plate: e.target.value.toUpperCase(),
+                      })
+                    }
+                    placeholder="Ex: BRA2E19"
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold focus:border-ttnb-blue outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Facilita a compra de passagens de carro sem redigitar.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+                    Destino Frequente
+                  </label>
+                  <select
+                    value={userSettings.favorite_route || 'Salvador ➔ Mar Grande'}
+                    onChange={(e) =>
+                      setUserSettings({ ...userSettings, favorite_route: e.target.value })
+                    }
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:border-ttnb-blue outline-none"
+                  >
+                    <option value="Salvador ➔ Mar Grande">Salvador ➔ Mar Grande (Itaparica)</option>
+                    <option value="Salvador ➔ Morro de São Paulo">
+                      Salvador ➔ Morro de São Paulo
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase block mb-1">
+                  Formato Preferencial do Bilhete de Embarque
+                </label>
+                <div className="grid grid-cols-2 gap-3 mt-1.5">
+                  <label
+                    className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between text-xs font-bold transition-all ${
+                      userSettings.receipt_format === 'DIGITAL_QR'
+                        ? 'border-ttnb-blue bg-blue-50/50 text-ttnb-blue'
+                        : 'border-slate-200 bg-white text-slate-700'
+                    }`}
+                  >
+                    <span>📱 QR Code no Celular</span>
+                    <input
+                      type="radio"
+                      name="receipt_format"
+                      checked={userSettings.receipt_format === 'DIGITAL_QR'}
+                      onChange={() =>
+                        setUserSettings({ ...userSettings, receipt_format: 'DIGITAL_QR' })
+                      }
+                      className="hidden"
+                    />
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-lg border cursor-pointer flex items-center justify-between text-xs font-bold transition-all ${
+                      userSettings.receipt_format === 'PRINT_A4'
+                        ? 'border-ttnb-blue bg-blue-50/50 text-ttnb-blue'
+                        : 'border-slate-200 bg-white text-slate-700'
+                    }`}
+                  >
+                    <span>📄 Voucher para Impressão</span>
+                    <input
+                      type="radio"
+                      name="receipt_format"
+                      checked={userSettings.receipt_format === 'PRINT_A4'}
+                      onChange={() =>
+                        setUserSettings({ ...userSettings, receipt_format: 'PRINT_A4' })
+                      }
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Ações de Salvar */}
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                {settingsSuccess && (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Preferências salvas com sucesso no seu perfil!
+                  </>
+                )}
+              </span>
+
+              <button
+                type="submit"
+                disabled={savingSettings}
+                className="bg-ttnb-blue hover:bg-ttnb-dark active:scale-95 text-white font-bold text-xs py-3 px-6 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>{savingSettings ? 'Salvando...' : 'Salvar Preferências'}</span>
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* Card Próxima Viagem ou Lista de Reservas */
+          <div className="mt-5">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[11px] font-bold text-[#887878] uppercase tracking-wider">
               Minhas Passagens
@@ -269,6 +523,7 @@ export const PassengerAreaPage: React.FC = () => {
             </div>
           )}
         </div>
+      )}
 
         {/* Acesso Rápido */}
         <div className="mt-6">

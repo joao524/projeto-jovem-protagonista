@@ -122,14 +122,26 @@ export const OperatorPosPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-6">
-      {/* Cabeçalho */}
-      <div className="border-b border-[#e5e5e5] pb-3">
-        <span className="text-[10px] font-bold text-ttnb-teal uppercase tracking-wider block">
-          TERMINAL DE CAIXA & GESTÃO
-        </span>
-        <h1 className="text-[20px] font-bold text-ttnb-blue">
-          Operação de Guichê
-        </h1>
+      {/* Cabeçalho com Parâmetros de Estação de Trabalho do Operador */}
+      <div className="border-b border-slate-200 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <span className="text-[11px] font-black text-ttnb-teal uppercase tracking-wider block">
+              TERMINAL DE CAIXA & GESTÃO OPERACIONAL
+            </span>
+            <h1 className="text-2xl font-black text-ttnb-blue">
+              Operação de Guichê
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold bg-slate-100 border border-slate-200 text-slate-700 px-2.5 py-1 rounded-md">
+              📍 Guichê 02 — Salvador
+            </span>
+            <span className="text-[11px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-md">
+              👤 OP-7701 (Marcos Fiscal)
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Abas Superiores */}

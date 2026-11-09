@@ -71,6 +71,15 @@ async def login(data: UserLoginRequest, db: AsyncSession = Depends(get_db)):
     return await service.authenticate(data)
 
 
+from pydantic import BaseModel, Field
+
+USER_CONFIGS_STORE = {}
+
+
+class UserConfigUpdateRequest(BaseModel):
+    settings: dict
+
+
 @router.get("/me", response_model=UserProfileResponse)
 async def get_my_profile(current_user: User = Depends(get_current_user)):
     return UserProfileResponse(
@@ -83,3 +92,74 @@ async def get_my_profile(current_user: User = Depends(get_current_user)):
         roles=[r.id for r in current_user.roles],
         created_at=current_user.created_at,
     )
+
+
+@router.get("/me/config")
+async def get_user_config(current_user: User = Depends(get_current_user)):
+    """Retorna as configurações personalizadas de acordo com o papel do usuário."""
+    user_id_str = str(current_user.id)
+    roles = [r.id for r in current_user.roles]
+    primary_role = roles[0] if roles else "PASSENGER"
+
+    # Configurações padrão específicas para cada definição de usuário
+    default_settings_by_role = {
+        "PASSENGER": {
+            "default_plate": "BRA2E19",
+            "notify_weather_email": True,
+            "notify_weather_whatsapp": True,
+            "receipt_format": "DIGITAL_QR",
+            "favorite_route": "Salvador ➔ Mar Grande",
+            "auto_checkin": True,
+        },
+        "OPERATOR": {
+            "workstation_id": "Guichê 02 - Terminal Náutico Comércio",
+            "badge_number": "OP-7701",
+            "scanner_mode": "CONTINUOUS_CAMERA",
+            "audio_feedback": True,
+            "auto_print_voucher": True,
+            "cashier_max_limit": 5000.00,
+        },
+        "SUPERVISOR": {
+            "auto_suspend_wind_threshold_knots": 28,
+            "auto_refund_on_cancellation": True,
+            "audit_logging_level": "EXTENDED",
+            "financial_closing_alert": "18:30",
+            "emergency_broadcast_active": False,
+        },
+        "ADMINISTRATOR": {
+            "auto_suspend_wind_threshold_knots": 28,
+            "auto_refund_on_cancellation": True,
+            "audit_logging_level": "EXTENDED",
+            "financial_closing_alert": "18:30",
+            "emergency_broadcast_active": False,
+            "allow_operator_manual_override": True,
+        },
+    }
+
+    base_defaults = default_settings_by_role.get(
+        primary_role, default_settings_by_role["PASSENGER"]
+    )
+    saved = USER_CONFIGS_STORE.get(user_id_str, {})
+    merged = {**base_defaults, **saved}
+
+    return {
+        "user_id": user_id_str,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "primary_role": primary_role,
+        "roles": roles,
+        "settings": merged,
+    }
+
+
+@router.patch("/me/config")
+async def update_user_config(
+    payload: UserConfigUpdateRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Atualiza preferências e parâmetros operacionais do usuário ativo."""
+    user_id_str = str(current_user.id)
+    current = USER_CONFIGS_STORE.get(user_id_str, {})
+    current.update(payload.settings)
+    USER_CONFIGS_STORE[user_id_str] = current
+    return await get_user_config(current_user)
