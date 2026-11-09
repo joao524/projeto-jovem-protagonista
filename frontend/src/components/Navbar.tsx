@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, ArrowLeft, Anchor, Ticket, User, HelpCircle } from 'lucide-react';
+import { Menu, ArrowLeft, Anchor, Ticket } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMenu: () => void;
@@ -29,102 +29,101 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#fffefa]/95 backdrop-blur-md border-b border-[#e5e5e5] shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        {/* Esquerda: Botão Voltar ou Logo TTNB */}
-        <div className="flex items-center space-x-3">
+    <header className="sticky top-0 z-40 bg-[#fffefa]/90 backdrop-blur-xl border-b border-slate-200/70 transition-all">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 h-20 flex items-center justify-between">
+        {/* Esquerda: Logo Náutico TTNB ou Botão Voltar */}
+        <div className="flex items-center space-x-4">
           {showBack ? (
             <button
               onClick={handleBack}
-              className="p-1.5 -ml-1 text-slate-800 hover:text-ttnb-orange hover:bg-slate-100/60 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 -ml-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 rounded-full transition-all flex items-center gap-2 cursor-pointer"
             >
-              <ArrowLeft className="w-5 h-5 text-ttnb-blue" />
-              <span className="text-[14px] font-semibold text-slate-800">{backTitle}</span>
+              <ArrowLeft className="w-4 h-4 text-ttnb-blue" />
+              <span className="text-[14px] font-semibold">{backTitle}</span>
             </button>
           ) : (
             <div
               onClick={() => navigate('/')}
-              className="flex items-center space-x-2.5 cursor-pointer select-none group"
+              className="flex items-center space-x-3 cursor-pointer select-none group"
             >
-              <div className="w-8 h-8 rounded-lg bg-ttnb-mint flex items-center justify-center text-ttnb-blue group-hover:bg-ttnb-blue group-hover:text-white transition-colors shadow-2xs">
-                <Anchor className="w-4 h-4" />
+              <div className="w-10 h-10 rounded-xl bg-ttnb-blue flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
+                <Anchor className="w-5 h-5 text-ttnb-mint" />
               </div>
-              <div>
-                <p className="text-[12px] font-extrabold text-ttnb-blue leading-tight tracking-wide">
+              <div className="flex flex-col">
+                <span className="text-[13px] font-black tracking-tight text-ttnb-blue leading-tight">
                   TERMINAL NÁUTICO
-                </p>
-                <p className="text-[10px] font-semibold text-ttnb-subtle leading-tight">
+                </span>
+                <span className="text-[11px] font-medium text-slate-500 leading-tight">
                   DA BAHIA — TTNB
-                </p>
+                </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Centro: Links de Navegação Rápida (Desktop - telas md e maiores) */}
-        <nav className="hidden md:flex items-center space-x-6 text-[13px] font-medium text-slate-700">
-          <button
-            onClick={() => navigate('/')}
-            className={`transition-colors cursor-pointer ${
-              isActive('/') ? 'text-ttnb-orange font-bold' : 'hover:text-ttnb-blue'
-            }`}
-          >
-            Início
-          </button>
+        {/* Centro: Links de Navegação Big Tech com Espaçamento Arejado */}
+        <nav className="hidden lg:flex items-center space-x-10 text-[14px] font-medium text-slate-600">
           <button
             onClick={() => navigate('/horarios')}
-            className={`transition-colors cursor-pointer ${
-              isActive('/horarios') ? 'text-ttnb-orange font-bold' : 'hover:text-ttnb-blue'
+            className={`transition-colors cursor-pointer py-1 ${
+              isActive('/horarios')
+                ? 'text-ttnb-blue font-bold border-b-2 border-ttnb-blue'
+                : 'hover:text-ttnb-blue'
             }`}
           >
             Horários & Tarifas
           </button>
           <button
             onClick={() => navigate('/filometro')}
-            className={`transition-colors cursor-pointer ${
-              isActive('/filometro') ? 'text-ttnb-orange font-bold' : 'hover:text-ttnb-blue'
+            className={`transition-colors cursor-pointer py-1 ${
+              isActive('/filometro')
+                ? 'text-ttnb-blue font-bold border-b-2 border-ttnb-blue'
+                : 'hover:text-ttnb-blue'
             }`}
           >
             Filômetro
           </button>
           <button
             onClick={() => navigate('/status')}
-            className={`transition-colors cursor-pointer ${
-              isActive('/status') ? 'text-ttnb-orange font-bold' : 'hover:text-ttnb-blue'
+            className={`transition-colors cursor-pointer py-1 ${
+              isActive('/status')
+                ? 'text-ttnb-blue font-bold border-b-2 border-ttnb-blue'
+                : 'hover:text-ttnb-blue'
             }`}
           >
             Status Operacional
           </button>
           <button
             onClick={() => navigate('/minha-conta')}
-            className={`transition-colors cursor-pointer ${
-              isActive('/minha-conta') ? 'text-ttnb-orange font-bold' : 'hover:text-ttnb-blue'
+            className={`transition-colors cursor-pointer py-1 ${
+              isActive('/minha-conta')
+                ? 'text-ttnb-blue font-bold border-b-2 border-ttnb-blue'
+                : 'hover:text-ttnb-blue'
             }`}
           >
             Área do Passageiro
           </button>
         </nav>
 
-        {/* Direita: Ações Desktop e Botão Menu Hamburger */}
-        <div className="flex items-center space-x-3">
-          {/* CTA Comprar passagem no Desktop */}
+        {/* Direita: CTA Big Tech e Botão Menu */}
+        <div className="flex items-center space-x-3 sm:space-x-4">
+          {/* Botão Pílula "Comprar passagem" */}
           <button
             onClick={() => navigate('/horarios')}
-            className="hidden sm:inline-flex items-center gap-1.5 bg-[#ed7837] hover:bg-[#d96728] text-white font-bold text-[13px] px-3.5 py-2 rounded-lg shadow-2xs transition-all cursor-pointer active:scale-95"
+            className="hidden sm:inline-flex items-center gap-2 bg-[#ed7837] hover:bg-[#d96728] active:scale-95 text-white font-bold text-[13px] px-5 py-2.5 rounded-full shadow-xs hover:shadow-md transition-all cursor-pointer"
           >
             <Ticket className="w-4 h-4" />
             <span>Comprar passagem</span>
           </button>
 
-          {/* Botão de Menu Principal (Abre o Drawer em Mobile e Desktop) */}
+          {/* Botão Menu Hamburger com Design Minimalista */}
           <button
             onClick={onOpenMenu}
-            className="p-2 text-slate-800 hover:text-ttnb-orange hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+            className="w-10 h-10 rounded-full hover:bg-slate-100/90 active:scale-95 transition-all flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
             aria-label="Abrir Menu de Navegação"
             title="Abrir Menu"
           >
-            <Menu className="w-6 h-6" />
-            <span className="hidden md:inline text-[13px] font-bold text-slate-800">Menu</span>
+            <Menu className="w-5 h-5" />
           </button>
         </div>
       </div>
