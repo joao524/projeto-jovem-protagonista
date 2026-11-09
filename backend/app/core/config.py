@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     SECRET_BOARDING_KEY: str = "secret_boarding_hmac_key_for_qr_codes"
+    PAYMENT_WEBHOOK_SECRET: str = "dev_webhook_secret_key_2026"
 
     # Business rules
     BOOKING_EXPIRATION_MINUTES: int = 15

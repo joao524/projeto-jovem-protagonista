@@ -193,3 +193,101 @@ def test_vehicle_plate_editing_and_audit_rules():
     detail_msg = res_after_boarding.json()["detail"]
     assert "BOARDED" in detail_msg or "validado" in detail_msg
 
+
+def test_payment_gateway_webhook_lifecycle_and_idempotency():
+    # 1. Cria nova reserva aguardando pagamento
+    res = client.post(
+        "/api/v1/bookings",
+        json={
+            "route_id": "11111111-1111-1111-1111-111111111111",
+            "trip_id": "33333333-3333-3333-3333-333333333303",
+            "travel_date": "25 nov. 2026",
+            "departure_time": "10:00",
+            "origin": "Salvador",
+            "destination": "Mar Grande",
+            "operator": "Marina Socicam",
+            "passengers": [
+                {
+                    "full_name": "Lucas Bahia",
+                    "document_number": "111.222.333-44",
+                    "passenger_type": "ADULT",
+                }
+            ],
+            "vehicle": {
+                "category_code": "MOTORCYCLE",
+                "plate": "MOT-1A23",
+                "driver_name": "Lucas Bahia",
+            },
+            "customer_email": "lucas@email.com",
+            "customer_name": "Lucas Bahia",
+        },
+    )
+    assert res.status_code == 201
+    booking = res.json()
+    booking_id = booking["id"]
+    event_id = f"evt_test_{booking_id}"
+
+    # 2. Webhook com Token Invalido -> DEVE RECUSAR com 401
+    res_unauth = client.post(
+        "/api/v1/payments/webhook",
+        headers={"X-Webhook-Token": "token_invalido_hacker"},
+        json={
+            "event_id": event_id,
+            "event_type": "payment.approved",
+            "booking_id": booking_id,
+        },
+    )
+    assert res_unauth.status_code == 401
+
+    # 3. Webhook com Token Valido e Evento payment.approved -> DEVE CONFIRMAR E EMITIR BILHETES
+    res_valid = client.post(
+        "/api/v1/payments/webhook",
+        headers={"X-Webhook-Token": "dev_webhook_secret_key_2026"},
+        json={
+            "event_id": event_id,
+            "event_type": "payment.approved",
+            "external_reference": booking_id,
+            "amount_paid": booking["total_amount"],
+            "payment_method": "PIX",
+            "gateway_transaction_id": "tx_mp_9988776655",
+        },
+    )
+    assert res_valid.status_code == 200
+    valid_data = res_valid.json()
+    assert valid_data["status"] == "success"
+    # 1 bilhete de passageiro + 1 bilhete de veículo = 2 bilhetes
+    assert valid_data["tickets_issued"] == 2
+
+    # Verifica status da reserva no sistema
+    res_check = client.get(f"/api/v1/bookings/{booking_id}")
+    assert res_check.status_code == 200
+    b_data = res_check.json()
+    assert b_data["status"] == "CONFIRMED"
+    assert len(b_data["tickets"]) == 2
+
+    # 4. Envio do MESMO evento de webhook -> DEVE RETORNAR 'ignored' (IDEMPOTÊNCIA)
+    res_idempotent = client.post(
+        "/api/v1/payments/webhook",
+        headers={"X-Webhook-Token": "dev_webhook_secret_key_2026"},
+        json={
+            "event_id": event_id,
+            "event_type": "payment.approved",
+            "booking_id": booking_id,
+        },
+    )
+    assert res_idempotent.status_code == 200
+    assert res_idempotent.json()["status"] == "ignored"
+
+    # 5. Webhook para reserva inexistente -> DEVE RETORNAR 404
+    res_not_found = client.post(
+        "/api/v1/payments/webhook",
+        headers={"X-Webhook-Token": "dev_webhook_secret_key_2026"},
+        json={
+            "event_id": "evt_inexistente_999",
+            "event_type": "payment.approved",
+            "booking_id": "00000000-0000-0000-0000-000000000000",
+        },
+    )
+    assert res_not_found.status_code == 404
+
+
