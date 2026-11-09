@@ -16,6 +16,10 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
+# Alias mantido por compatibilidade (usado pelo seed)
+get_password_hash = hash_password
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
         pwd_bytes = plain_password.encode("utf-8")[:72]
@@ -29,6 +33,8 @@ def create_access_token(
     subject: str | Any,
     roles: list[str],
     expires_delta: timedelta | None = None,
+    email: str | None = None,
+    name: str | None = None,
 ) -> str:
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -43,6 +49,11 @@ def create_access_token(
         "exp": expire,
         "iat": datetime.now(timezone.utc),
     }
+    if email:
+        to_encode["email"] = email
+    if name:
+        to_encode["name"] = name
+
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )

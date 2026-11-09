@@ -1,7 +1,19 @@
+import uuid
 from fastapi.testclient import TestClient
+from app.core.security import create_access_token
 from app.main import app
 
 client = TestClient(app)
+
+
+def make_auth_headers(role: str, email: str, name: str) -> dict:
+    token = create_access_token(
+        subject=uuid.uuid5(uuid.NAMESPACE_DNS, email),
+        roles=[role],
+        email=email,
+        name=name,
+    )
+    return {"Authorization": f"Bearer {token}"}
 
 
 def test_public_endpoints():
@@ -141,9 +153,27 @@ def test_vehicle_plate_editing_and_audit_rules():
     assert booking_data["vehicle"]["license_plate"] == "BRA2E19"
     assert len(booking_data["vehicle_plate_history"]) == 1
 
-    # 2. Atualiza placa para nova placa válida (Mercosul)
+    # 2. Segurança: sem token deve falhar com 401; com outro passageiro deve falhar com 403
+    mariana_headers = make_auth_headers("PASSENGER", "mariana@email.com", "Mariana Souza")
+    other_headers = make_auth_headers("PASSENGER", "hacker@email.com", "Outro Usuário")
+
+    res_no_auth = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        json={"new_plate": "BAH-8A22"},
+    )
+    assert res_no_auth.status_code == 401
+
+    res_forbidden = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        headers=other_headers,
+        json={"new_plate": "BAH-8A22"},
+    )
+    assert res_forbidden.status_code == 403
+
+    # Atualiza placa autenticado como a titular Mariana
     res_update = client.patch(
         f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        headers=mariana_headers,
         json={
             "new_plate": "BAH-8A22",
             "reason": "Troquei de carro para a viagem",
@@ -162,6 +192,7 @@ def test_vehicle_plate_editing_and_audit_rules():
     # 3. Tentativa com placa inválida (deve falhar com 400)
     res_invalid = client.patch(
         f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        headers=mariana_headers,
         json={"new_plate": "INVALID123"},
     )
     assert res_invalid.status_code == 400
@@ -170,6 +201,7 @@ def test_vehicle_plate_editing_and_audit_rules():
     # 4. Tentativa com placa idêntica à atual (deve falhar com 400)
     res_same = client.patch(
         f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        headers=mariana_headers,
         json={"new_plate": "BAH8A22"},
     )
     assert res_same.status_code == 400
@@ -187,6 +219,7 @@ def test_vehicle_plate_editing_and_audit_rules():
     # 6. Tentativa de alterar placa APÓS embarque (DEVE BLOQUEAR com 400)
     res_after_boarding = client.patch(
         f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        headers=mariana_headers,
         json={"new_plate": "ABC1234"},
     )
     assert res_after_boarding.status_code == 400
@@ -340,16 +373,22 @@ def test_notification_service_and_email_preview():
 
 
 def test_cash_register_and_csv_report_export():
-    # 1. Consulta resumo de fechamento de caixa do turno
-    res_summary = client.get("/api/v1/operations/cash-register-summary")
+    op_headers = make_auth_headers("OPERATOR", "operador@ttnb.ba.gov.br", "Marcos Fiscal")
+
+    # 1. Sem autenticação -> Deve falhar com 401
+    res_unauth = client.get("/api/v1/operations/cash-register-summary")
+    assert res_unauth.status_code == 401
+
+    # 2. Com operador autenticado -> Consulta resumo de fechamento de caixa
+    res_summary = client.get("/api/v1/operations/cash-register-summary", headers=op_headers)
     assert res_summary.status_code == 200
     summary = res_summary.json()["summary"]
     assert "total_revenue" in summary
     assert "cash_on_hand" in summary
     assert summary["confirmed_bookings"] >= 1
 
-    # 2. Download do Relatório Operacional em CSV
-    res_csv = client.get("/api/v1/operations/reports/export-csv")
+    # 3. Download do Relatório Operacional em CSV
+    res_csv = client.get("/api/v1/operations/reports/export-csv", headers=op_headers)
     assert res_csv.status_code == 200
     assert "text/csv" in res_csv.headers["content-type"]
     assert "Código Reserva" in res_csv.text
@@ -357,21 +396,30 @@ def test_cash_register_and_csv_report_export():
 
 
 def test_weather_suspension_lifecycle():
-    # 1. Consulta alertas ativos
+    sup_headers = make_auth_headers("SUPERVISOR", "supervisor@ttnb.ba.gov.br", "Supervisor de Plantão")
+
+    # 1. Consulta alertas ativos (público)
     res_alerts = client.get("/api/v1/operations/active-alerts")
     assert res_alerts.status_code == 200
     initial_alerts = res_alerts.json()
     assert len(initial_alerts) >= 1
 
-    # 2. Supervisor suspende viagem por ressaca marítima
+    # 2. Sem autenticação -> Tentar suspender deve falhar com 401
+    res_unauth = client.post(
+        "/api/v1/operations/suspend-trip",
+        json={"route": "Salvador ➔ Mar Grande", "affected_time": "17:30", "reason": "Teste"},
+    )
+    assert res_unauth.status_code == 401
+
+    # 3. Supervisor suspende viagem por ressaca marítima
     res_suspend = client.post(
         "/api/v1/operations/suspend-trip",
+        headers=sup_headers,
         json={
             "route": "Salvador ➔ Mar Grande",
             "affected_time": "17:30",
             "reason": "Ventos fortes no canal de Itaparica com ondas de 2.5m.",
             "severity": "CRITICAL",
-            "suspended_by": "Capitania dos Portos / Supervisor",
         },
     )
     assert res_suspend.status_code == 200
@@ -379,17 +427,17 @@ def test_weather_suspension_lifecycle():
     susp_id = susp_data["id"]
     assert susp_data["status"] == "ACTIVE"
 
-    # 3. Verifica que alerta passou a constar na lista pública
+    # 4. Verifica que alerta passou a constar na lista pública
     res_check = client.get("/api/v1/operations/active-alerts")
     active_ids = [a["id"] for a in res_check.json()]
     assert susp_id in active_ids
 
-    # 4. Reativa a viagem após normalização do mar
+    # 5. Reativa a viagem após normalização do mar
     res_resume = client.post(
         "/api/v1/operations/resume-trip",
+        headers=sup_headers,
         json={
             "suspension_id": susp_id,
-            "resumed_by": "Supervisor de Plantão",
         },
     )
     assert res_resume.status_code == 200

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -14,7 +14,10 @@ import {
   Monitor,
   Coins,
   Phone,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
+import { api } from '../services/api';
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -26,12 +29,45 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onClose,
 }) => {
   const navigate = useNavigate();
+  const [currentRole, setCurrentRole] = useState<string>('VISITANTE');
+  const [switching, setSwitching] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('ttnb_user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u.roles && u.roles.length > 0) {
+          setCurrentRole(u.roles[0]);
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setCurrentRole('VISITANTE');
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleNavigate = (path: string) => {
     navigate(path);
     onClose();
+  };
+
+  const handleSwitchRole = async (targetRole: string) => {
+    setSwitching(true);
+    try {
+      const res = await api.post(`/auth/demo-token?role=${targetRole}`);
+      localStorage.setItem('ttnb_token', res.data.access_token);
+      localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+      setCurrentRole(targetRole);
+      window.dispatchEvent(new Event('storage'));
+    } catch (err) {
+      console.error('Falha ao alternar papel de demonstração:', err);
+    } finally {
+      setSwitching(false);
+    }
   };
 
   return (
@@ -42,7 +78,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
       />
 
-      {/* Drawer deslizante a partir da ESQUERDA (igual ao layout de referência) */}
+      {/* Drawer deslizante a partir da ESQUERDA */}
       <div className="absolute inset-y-0 left-0 w-80 sm:w-88 max-w-[85vw] bg-white shadow-2xl flex flex-col justify-between p-6 overflow-y-auto animate-in slide-in-from-left duration-200 z-10">
         <div>
           {/* Header do Drawer: Título MENU e botão Fechar X */}
@@ -66,8 +102,59 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <span className="text-[15px]">Comprar passagem</span>
           </button>
 
+          {/* Seletor Rápido de Papel (Modo Demonstração / Avaliador) */}
+          <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-ttnb-teal" />
+                Papel Ativo
+              </span>
+              <span className="text-[10px] font-mono font-bold bg-white border border-slate-200 text-ttnb-blue px-2 py-0.5 rounded-full">
+                {currentRole}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1 text-[11px] font-semibold">
+              <button
+                type="button"
+                disabled={switching}
+                onClick={() => handleSwitchRole('PASSENGER')}
+                className={`py-1.5 px-1 rounded-md transition-all cursor-pointer ${
+                  currentRole === 'PASSENGER'
+                    ? 'bg-ttnb-blue text-white shadow-2xs font-bold'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                Passageiro
+              </button>
+              <button
+                type="button"
+                disabled={switching}
+                onClick={() => handleSwitchRole('OPERATOR')}
+                className={`py-1.5 px-1 rounded-md transition-all cursor-pointer ${
+                  currentRole === 'OPERATOR'
+                    ? 'bg-ttnb-blue text-white shadow-2xs font-bold'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                Operador
+              </button>
+              <button
+                type="button"
+                disabled={switching}
+                onClick={() => handleSwitchRole('SUPERVISOR')}
+                className={`py-1.5 px-1 rounded-md transition-all cursor-pointer ${
+                  currentRole === 'SUPERVISOR' || currentRole === 'ADMINISTRATOR'
+                    ? 'bg-ttnb-blue text-white shadow-2xs font-bold'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                Supervisor
+              </button>
+            </div>
+          </div>
+
           {/* Seção 1: MINHA VIAGEM */}
-          <div className="mt-6">
+          <div className="mt-5">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
               MINHA VIAGEM
             </p>

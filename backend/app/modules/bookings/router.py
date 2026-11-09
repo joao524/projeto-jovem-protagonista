@@ -1,11 +1,19 @@
-import random
 import re
+import secrets
 import string
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+
+from app.core.dependencies import (
+    ensure_owner_or_staff,
+    get_current_user,
+    get_optional_user,
+    user_is_staff,
+)
+from app.modules.identity.models import User
 
 router = APIRouter(prefix="/bookings", tags=["Reservas"])
 
@@ -72,8 +80,9 @@ class BookingResponse(BaseModel):
     vehicle_plate_history: List[dict] = []
 
 def generate_booking_code() -> str:
+    # secrets (CSPRNG) em vez de random: códigos não podem ser previsíveis
     chars = string.ascii_uppercase + string.digits
-    rand = ''.join(random.choices(chars, k=6))
+    rand = ''.join(secrets.choice(chars) for _ in range(6))
     return f"TTNB-{rand}"
 
 @router.post("", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
@@ -152,11 +161,16 @@ async def create_booking(data: CreateBookingRequest):
     )
 
 @router.get("/my-bookings")
-async def get_my_bookings(email: Optional[str] = None):
-    results = list(BOOKINGS_STORE.values())
-    if email:
-        results = [b for b in results if b.get("customer_email") == email]
-    return results
+async def get_my_bookings(current_user: User = Depends(get_current_user)):
+    """Lista SOMENTE as reservas do passageiro autenticado (LGPD).
+
+    O e-mail vem do token; não é mais aceito por parâmetro.
+    """
+    user_email = (current_user.email or "").lower()
+    return [
+        b for b in BOOKINGS_STORE.values()
+        if (b.get("customer_email") or "").lower() == user_email
+    ]
 
 @router.get("/{booking_id}", response_model=BookingResponse)
 async def get_booking(booking_id: str):
@@ -190,14 +204,21 @@ async def get_booking(booking_id: str):
     )
 
 @router.patch("/{booking_id}/vehicle-plate", response_model=BookingResponse)
-async def update_vehicle_plate(booking_id: str, payload: UpdateVehiclePlateRequest):
+async def update_vehicle_plate(
+    booking_id: str,
+    payload: UpdateVehiclePlateRequest,
+    current_user: User = Depends(get_current_user),
+):
     """
     Regra de negócio confirmada: O passageiro pode corrigir a placa do veículo
     até o momento do embarque, mediante registro de auditoria da alteração.
+    Apenas o titular da reserva ou a equipe do terminal podem alterar.
     """
     booking = BOOKINGS_STORE.get(booking_id)
     if not booking:
         raise HTTPException(status_code=404, detail="Reserva não encontrada.")
+
+    ensure_owner_or_staff(current_user, booking.get("customer_email"))
     
     if not booking.get("vehicle"):
         raise HTTPException(status_code=400, detail="Esta reserva não possui veículo cadastrado.")
@@ -229,7 +250,8 @@ async def update_vehicle_plate(booking_id: str, payload: UpdateVehiclePlateReque
     history_entry = {
         "previous_plate": old_plate,
         "new_plate": new_cleaned_plate,
-        "changed_by": payload.changed_by or "Passageiro",
+        "changed_by": current_user.full_name,
+        "changed_by_user_id": str(current_user.id),
         "reason": payload.reason or "Correção cadastral",
         "changed_at": now.isoformat()
     }
