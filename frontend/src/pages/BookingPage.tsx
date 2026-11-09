@@ -1,7 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Calendar, Clock, Plus, Minus, ArrowRight, Car, Info, ArrowUpRight } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Plus,
+  Minus,
+  ArrowRight,
+  Car,
+  Info,
+  ArrowUpRight,
+  ChevronDown,
+  Check,
+  X,
+} from 'lucide-react';
 import { api } from '../services/api';
+
+const AVAILABLE_TIMES_MAR_GRANDE = [
+  '05:00',
+  '05:30',
+  '06:00',
+  '06:30',
+  '07:00',
+  '08:00',
+  '09:30',
+  '11:00',
+  '12:30',
+  '14:00',
+  '15:30',
+  '17:00',
+  '18:00',
+];
+
+const AVAILABLE_TIMES_MORRO = [
+  '08:30',
+  '09:00',
+  '10:30',
+  '13:00',
+  '14:30',
+];
 
 export const BookingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,7 +46,7 @@ export const BookingPage: React.FC = () => {
   const tripId = searchParams.get('tripId') || '33333333-3333-3333-3333-333333333303';
   const routeId = searchParams.get('routeId') || '11111111-1111-1111-1111-111111111111';
   const destino = searchParams.get('destino') || 'Mar Grande';
-  const horario = searchParams.get('horario') || '06:00';
+  const initialHorario = searchParams.get('horario') || '06:00';
   const operador = searchParams.get('operador') || 'Marina Socicam';
 
   const isMorro = destino.includes('Morro');
@@ -18,7 +54,12 @@ export const BookingPage: React.FC = () => {
 
   // Estado da reserva
   const [passengerCount, setPassengerCount] = useState(1);
-  const [travelDate, setTravelDate] = useState('2026-11-23');
+  const [travelDate, setTravelDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [horario, setHorario] = useState(initialHorario);
+  const [showTimeModal, setShowTimeModal] = useState(false);
   const [includeVehicle, setIncludeVehicle] = useState(false);
   const [vehicleCategory, setVehicleCategory] = useState('STANDARD_CAR');
   const [vehiclePlate, setVehiclePlate] = useState('');
@@ -27,6 +68,8 @@ export const BookingPage: React.FC = () => {
 
   const vehiclePrice = includeVehicle ? 45.0 : 0.0;
   const totalEstimated = passengerCount * unitPrice + vehiclePrice;
+
+  const availableTimes = isMorro ? AVAILABLE_TIMES_MORRO : AVAILABLE_TIMES_MAR_GRANDE;
 
   const handleIncrement = () => {
     if (passengerCount < 10) setPassengerCount(passengerCount + 1);
@@ -52,10 +95,14 @@ export const BookingPage: React.FC = () => {
         passenger_type: 'ADULT',
       }));
 
+      // Formata data amigável
+      const [year, month, day] = travelDate.split('-');
+      const dateFormatted = `${day}/${month}/${year}`;
+
       const payload = {
         route_id: routeId,
         trip_id: tripId,
-        travel_date: '23 nov. 2026',
+        travel_date: dateFormatted,
         departure_time: horario,
         origin: 'Salvador',
         destination: destino,
@@ -73,13 +120,13 @@ export const BookingPage: React.FC = () => {
       const res = await api.post('/bookings', payload);
       const booking = res.data;
 
-      // Salva dados no storage para fluxo contínuo
       localStorage.setItem('active_booking_id', booking.id);
-
       navigate(`/identificacao/${booking.id}`);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao criar intenção de reserva', err);
-      setErrorMsg('Erro ao registrar intenção de reserva. Tente novamente.');
+      setErrorMsg(
+        err.response?.data?.detail || 'Erro ao registrar intenção de reserva. Tente novamente.'
+      );
     } finally {
       setLoading(false);
     }
@@ -112,26 +159,41 @@ export const BookingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Seleção de Data e Horário em 2 Colunas */}
+        {/* Seleção de Data e Horário Interativos */}
         <div className="grid grid-cols-2 gap-3 mt-4">
+          {/* BOTÃO INTERATIVO: DATA DA VIAGEM */}
           <div>
             <label className="text-[11px] font-bold text-[#887878] uppercase tracking-wider block mb-1">
               Data da viagem
             </label>
-            <div className="bg-white border border-ttnb-border rounded-md p-2.5 flex items-center justify-between shadow-2xs">
-              <span className="text-[13px] font-bold text-ttnb-dark">23 nov. 2026</span>
-              <Calendar className="w-4 h-4 text-ttnb-teal" />
+            <div className="relative bg-white border border-ttnb-border hover:border-ttnb-blue rounded-md p-2 flex items-center justify-between shadow-2xs transition-colors">
+              <input
+                type="date"
+                value={travelDate}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setTravelDate(e.target.value)}
+                className="w-full text-[13px] font-bold text-ttnb-dark bg-transparent focus:outline-none cursor-pointer"
+              />
+              <Calendar className="w-4 h-4 text-ttnb-teal pointer-events-none absolute right-2.5" />
             </div>
           </div>
 
+          {/* BOTÃO INTERATIVO: HORÁRIO */}
           <div>
             <label className="text-[11px] font-bold text-[#887878] uppercase tracking-wider block mb-1">
               Horário
             </label>
-            <div className="bg-white border border-ttnb-border rounded-md p-2.5 flex items-center justify-between shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setShowTimeModal(true)}
+              className="w-full bg-white border border-ttnb-border hover:border-ttnb-blue rounded-md p-2 flex items-center justify-between shadow-2xs text-left cursor-pointer transition-colors"
+            >
               <span className="text-[13px] font-bold text-ttnb-dark">{horario}</span>
-              <Clock className="w-4 h-4 text-ttnb-teal" />
-            </div>
+              <div className="flex items-center gap-1 text-ttnb-teal">
+                <Clock className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5" />
+              </div>
+            </button>
           </div>
         </div>
 
@@ -195,67 +257,117 @@ export const BookingPage: React.FC = () => {
                   placeholder="EX: BRA2E19"
                   maxLength={8}
                   value={vehiclePlate}
-                  onChange={(e) => setVehiclePlate(e.target.value)}
+                  onChange={(e) => setVehiclePlate(e.target.value.toUpperCase())}
                   className="mt-1 w-full p-2 bg-white border border-slate-300 rounded text-sm font-mono uppercase focus:outline-none focus:border-ttnb-blue"
                 />
                 <p className="text-[10px] text-slate-500 mt-1">
-                  * A placa pode ser corrigida até o embarque na Área do Passageiro.
+                  A placa pode ser corrigida na sua área até o momento do embarque.
                 </p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-600 block uppercase">
+                  Categoria do Veículo
+                </label>
+                <select
+                  value={vehicleCategory}
+                  onChange={(e) => setVehicleCategory(e.target.value)}
+                  className="mt-1 w-full p-2 bg-white border border-slate-300 rounded text-xs focus:outline-none focus:border-ttnb-blue"
+                >
+                  <option value="STANDARD_CAR">Automóvel de Passeio / SUV</option>
+                  <option value="MOTORCYCLE">Motocicleta</option>
+                  <option value="VAN">Van / Caminhonete</option>
+                </select>
               </div>
             </div>
           )}
         </div>
 
-        {/* Preço Unitário e Total Estimado */}
-        <div className="mt-5 space-y-2 text-[12px]">
-          <div className="flex justify-between text-[#615f5e]">
-            <span>Valor por passageiro</span>
-            <span className="font-bold text-black">
-              R$ {unitPrice.toFixed(2).replace('.', ',')}
-            </span>
+        {/* Resumo de Valores */}
+        <div className="mt-5 p-3.5 bg-white border border-ttnb-border rounded-md shadow-2xs flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-[#887878] uppercase font-bold">Valor Estimado</p>
+            <p className="text-[10px] text-slate-500">
+              {passengerCount} passageiro(s) {includeVehicle ? '+ 1 veículo' : ''}
+            </p>
           </div>
-          {includeVehicle && (
-            <div className="flex justify-between text-[#615f5e]">
-              <span>Vaga de veículo (Automóvel)</span>
-              <span className="font-bold text-black">R$ 45,00</span>
-            </div>
-          )}
-          <div className="border-t border-[#ece8e5] pt-2 flex justify-between items-baseline">
-            <span className="text-[13px] font-bold text-ttnb-blue">Total estimado</span>
-            <span className="text-[20px] font-extrabold text-ttnb-blue">
-              R$ {totalEstimated.toFixed(2).replace('.', ',')}
-            </span>
-          </div>
+          <span className="text-[20px] font-black text-ttnb-blue">
+            R$ {totalEstimated.toFixed(2).replace('.', ',')}
+          </span>
         </div>
 
         {errorMsg && (
-          <div className="mt-3 p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
+          <p className="mt-3 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 p-2 rounded">
             {errorMsg}
-          </div>
-        )}
-
-        {/* Card Informativo (Figma: Rectangle 9) */}
-        <div className="mt-5 bg-[#f5f5f5] border border-[#e5e5e5] rounded-md p-3 flex items-center space-x-2.5">
-          <div className="w-5 h-5 rounded-full bg-slate-300 text-slate-700 flex items-center justify-center shrink-0">
-            <Info className="w-3.5 h-3.5" />
-          </div>
-          <p className="text-[11px] text-[#615f5e] leading-snug">
-            Para continuar, entre ou crie uma conta. Sua escolha será mantida.
           </p>
-        </div>
+        )}
       </div>
 
-      {/* Botão de Continuar (Figma: Group 14) */}
+      {/* Botão de Continuar */}
       <div className="mt-6 pt-4 border-t border-[#f0ece9]">
         <button
+          type="button"
           onClick={handleContinue}
           disabled={loading}
           className="w-full bg-ttnb-orange hover:bg-[#d96728] text-white font-bold py-3.5 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60"
         >
-          <span>{loading ? 'Preparando reserva...' : 'Continuar para identificação'}</span>
-          <ArrowUpRight className="w-4 h-4" />
+          <span>{loading ? 'Preparando reserva...' : 'Continuar para Identificação'}</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* MODAL: SELETOR DE HORÁRIO INTERATIVO */}
+      {showTimeModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-md w-full max-w-sm p-4 shadow-xl border border-ttnb-border">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="flex items-center gap-1.5 text-ttnb-blue">
+                <Clock className="w-4 h-4 text-ttnb-teal" />
+                <h3 className="text-sm font-bold">Escolha o Horário de Saída</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTimeModal(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-500 mt-2">
+              Horários regulares disponíveis para {destino}:
+            </p>
+
+            <div className="grid grid-cols-3 gap-2 mt-3 max-h-60 overflow-y-auto p-1">
+              {availableTimes.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setHorario(t);
+                    setShowTimeModal(false);
+                  }}
+                  className={`py-2.5 px-2 rounded-md font-mono text-xs font-bold border transition-all cursor-pointer ${
+                    horario === t
+                      ? 'bg-ttnb-blue text-white border-ttnb-blue shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-ttnb-blue hover:bg-white'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowTimeModal(false)}
+              className="mt-4 w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded text-xs cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

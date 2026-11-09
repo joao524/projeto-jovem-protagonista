@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, CheckSquare, Square, ArrowLeft } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { Eye, EyeOff, ArrowRight, CheckSquare, Square, ArrowLeft, UserPlus, LogIn } from 'lucide-react';
 import { api } from '../services/api';
 
 export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { bookingId } = useParams();
 
-  const [isLoginMode, setIsLoginMode] = useState(true);
+  // Se a rota for /cadastro, inicia em modo de cadastro
+  const isRegisterRoute = location.pathname.includes('/cadastro');
+  const [isLoginMode, setIsLoginMode] = useState(!isRegisterRoute);
   const [showPassword, setShowPassword] = useState(false);
   const [bookingSummary, setBookingSummary] = useState<any>(null);
 
@@ -18,6 +21,10 @@ export const AuthPage: React.FC = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    setIsLoginMode(!location.pathname.includes('/cadastro'));
+  }, [location.pathname]);
 
   useEffect(() => {
     async function loadBooking() {
@@ -85,7 +92,7 @@ export const AuthPage: React.FC = () => {
         }
       }
 
-      // Redireciona para o checkout da reserva
+      // Redireciona para o checkout da reserva ou área do passageiro
       if (bookingId) {
         navigate(`/checkout/${bookingId}`);
       } else {
@@ -101,10 +108,10 @@ export const AuthPage: React.FC = () => {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
       <div>
-        {/* Resumo da Reserva Pendente no Topo (Figma: Rectangle 9) */}
+        {/* Resumo da Reserva Pendente no Topo (se houver) */}
         {bookingSummary && (
           <div className="mt-1 bg-white border border-ttnb-border rounded-md p-3 shadow-2xs">
-            <p className="text-[10px] font-bold text-[#887878] uppercase">Sua reserva</p>
+            <p className="text-[10px] font-bold text-[#887878] uppercase">Sua reserva em andamento</p>
             <div className="flex items-center space-x-1.5 text-[13px] font-bold text-ttnb-blue mt-0.5">
               <span>{bookingSummary.origin}</span>
               <span className="text-ttnb-teal">➔</span>
@@ -117,18 +124,46 @@ export const AuthPage: React.FC = () => {
           </div>
         )}
 
+        {/* Abas Alternadoras: Entrar vs Criar Conta */}
+        <div className="mt-4 bg-[#edebe8] p-1 rounded-md flex space-x-1">
+          <button
+            type="button"
+            onClick={() => setIsLoginMode(true)}
+            className={`flex-1 py-2 text-[12px] font-bold rounded-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              isLoginMode
+                ? 'bg-white text-ttnb-blue shadow-xs'
+                : 'text-[#615f5e] hover:text-black'
+            }`}
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Já tenho conta</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsLoginMode(false)}
+            className={`flex-1 py-2 text-[12px] font-bold rounded-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              !isLoginMode
+                ? 'bg-white text-ttnb-blue shadow-xs'
+                : 'text-[#615f5e] hover:text-black'
+            }`}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Criar conta</span>
+          </button>
+        </div>
+
         {/* Cabeçalho do Formulário */}
         <div className="mt-5">
           <p className="text-[11px] font-bold text-ttnb-teal uppercase tracking-wider">
-            {isLoginMode ? 'SUA VIAGEM CONTINUA AQUI' : 'CADASTRO RÁPIDO'}
+            {isLoginMode ? 'IDENTIFICAÇÃO' : 'CADASTRO RÁPIDO'}
           </p>
           <h1 className="text-[26px] font-bold text-ttnb-blue mt-0.5 leading-tight">
             {isLoginMode ? 'Entre na sua conta.' : 'Crie sua conta.'}
           </h1>
           <p className="text-[12px] text-[#615f5e] mt-1">
             {isLoginMode
-              ? 'Identifique-se para guardar sua passagem e seguir para o pagamento.'
-              : 'Falta pouco para garantir sua travessia com segurança.'}
+              ? 'Acesse suas passagens e acompanhe seus bilhetes de embarque.'
+              : 'Cadastre-se para comprar passagens e gerenciar seus bilhetes.'}
           </p>
         </div>
 
@@ -184,64 +219,67 @@ export const AuthPage: React.FC = () => {
             </div>
           </div>
 
-          {isLoginMode ? (
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={() => alert('Link de recuperação enviado para seu e-mail.')}
-                className="text-[11px] font-semibold text-[#887878] hover:text-ttnb-blue underline cursor-pointer"
-              >
-                Esqueci minha senha
-              </button>
-            </div>
-          ) : (
+          {/* Termos de Privacidade no Cadastro */}
+          {!isLoginMode && (
             <div
               onClick={() => setAcceptedTerms(!acceptedTerms)}
               className="flex items-start space-x-2 pt-1 cursor-pointer select-none"
             >
-              {acceptedTerms ? (
-                <CheckSquare className="w-4 h-4 text-ttnb-teal mt-0.5 shrink-0" />
-              ) : (
-                <Square className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-              )}
-              <span className="text-[11px] text-[#615f5e] leading-snug">
-                Aceito os termos de uso e a política de privacidade (LGPD)
-              </span>
+              <div className="mt-0.5 text-ttnb-teal">
+                {acceptedTerms ? (
+                  <CheckSquare className="w-4 h-4" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-300" />
+                )}
+              </div>
+              <p className="text-[11px] text-[#615f5e] leading-snug">
+                Li e concordo com a{' '}
+                <span className="text-ttnb-blue font-bold underline">Política de Privacidade</span>{' '}
+                e os Termos de Serviço do Terminal Náutico.
+              </p>
             </div>
           )}
 
           {errorMsg && (
-            <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
+            <p className="text-xs font-bold text-red-600 bg-red-50 p-2.5 rounded border border-red-200">
               {errorMsg}
-            </div>
+            </p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-ttnb-orange hover:bg-[#d96728] text-white font-bold py-3.5 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60"
+            className="w-full bg-ttnb-orange hover:bg-[#d96728] text-white font-bold py-3.5 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer mt-5 disabled:opacity-60"
           >
-            <span>{loading ? 'Processando...' : isLoginMode ? 'Entrar e continuar' : 'Criar conta e continuar'}</span>
+            <span>{loading ? 'Processando...' : isLoginMode ? 'Entrar e Continuar' : 'Concluir Cadastro'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       </div>
 
-      {/* Alternância de Modo (Login vs Cadastro) */}
+      {/* Alternância Inferior */}
       <div className="mt-8 pt-4 border-t border-[#f0ece9] text-center">
-        <p className="text-[10px] font-bold text-[#887878] uppercase tracking-wider mb-2">
-          {isLoginMode ? 'AINDA NÃO TEM CONTA?' : 'JÁ TEM CONTA?'}
-        </p>
-        <button
-          onClick={() => {
-            setIsLoginMode(!isLoginMode);
-            setErrorMsg('');
-          }}
-          className="w-full bg-white border border-ttnb-border hover:border-ttnb-blue text-ttnb-blue font-bold py-3 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 transition-colors cursor-pointer"
-        >
-          <span>{isLoginMode ? 'Criar uma conta' : 'Entrar na minha conta'}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {isLoginMode ? (
+          <p className="text-[12px] text-[#615f5e]">
+            Ainda não tem conta?{' '}
+            <button
+              onClick={() => setIsLoginMode(false)}
+              className="text-ttnb-orange hover:text-[#d96728] font-bold underline cursor-pointer"
+            >
+              Criar conta agora
+            </button>
+          </p>
+        ) : (
+          <p className="text-[12px] text-[#615f5e]">
+            Já tem uma conta cadastrada?{' '}
+            <button
+              onClick={() => setIsLoginMode(true)}
+              className="text-ttnb-orange hover:text-[#d96728] font-bold underline cursor-pointer"
+            >
+              Entrar aqui
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );
