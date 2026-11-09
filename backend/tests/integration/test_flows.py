@@ -291,3 +291,109 @@ def test_payment_gateway_webhook_lifecycle_and_idempotency():
     assert res_not_found.status_code == 404
 
 
+def test_notification_service_and_email_preview():
+    # 1. Cria reserva e confirma pagamento para disparar e-mail
+    res = client.post(
+        "/api/v1/bookings",
+        json={
+            "route_id": "11111111-1111-1111-1111-111111111111",
+            "trip_id": "33333333-3333-3333-3333-333333333303",
+            "travel_date": "26 nov. 2026",
+            "departure_time": "11:00",
+            "origin": "Salvador",
+            "destination": "Mar Grande",
+            "operator": "Marina Socicam",
+            "passengers": [
+                {
+                    "full_name": "Juliana Ribeiro",
+                    "document_number": "555.666.777-88",
+                    "passenger_type": "ADULT",
+                }
+            ],
+            "customer_email": "juliana@email.com",
+            "customer_name": "Juliana Ribeiro",
+        },
+    )
+    assert res.status_code == 201
+    booking_id = res.json()["id"]
+
+    # 2. Confirma pagamento
+    client.post(f"/api/v1/payments/confirm-pix/{booking_id}")
+
+    # 3. Reenvio explícito de notificação
+    res_resend = client.post(f"/api/v1/notifications/resend/{booking_id}")
+    assert res_resend.status_code == 200
+    assert "reenviado com sucesso" in res_resend.json()["message"]
+
+    # 4. Consulta logs de notificação
+    res_logs = client.get("/api/v1/notifications/logs")
+    assert res_logs.status_code == 200
+    logs = res_logs.json()
+    assert len(logs) >= 1
+    assert any(l["recipient_email"] == "juliana@email.com" for l in logs)
+
+    # 5. Pré-visualização HTML do e-mail
+    res_preview = client.get(f"/api/v1/notifications/preview/{booking_id}")
+    assert res_preview.status_code == 200
+    assert "TERMINAL NÁUTICO DA BAHIA" in res_preview.text
+    assert "Juliana Ribeiro" in res_preview.text
+
+
+def test_cash_register_and_csv_report_export():
+    # 1. Consulta resumo de fechamento de caixa do turno
+    res_summary = client.get("/api/v1/operations/cash-register-summary")
+    assert res_summary.status_code == 200
+    summary = res_summary.json()["summary"]
+    assert "total_revenue" in summary
+    assert "cash_on_hand" in summary
+    assert summary["confirmed_bookings"] >= 1
+
+    # 2. Download do Relatório Operacional em CSV
+    res_csv = client.get("/api/v1/operations/reports/export-csv")
+    assert res_csv.status_code == 200
+    assert "text/csv" in res_csv.headers["content-type"]
+    assert "Código Reserva" in res_csv.text
+    assert "Juliana Ribeiro" in res_csv.text
+
+
+def test_weather_suspension_lifecycle():
+    # 1. Consulta alertas ativos
+    res_alerts = client.get("/api/v1/operations/active-alerts")
+    assert res_alerts.status_code == 200
+    initial_alerts = res_alerts.json()
+    assert len(initial_alerts) >= 1
+
+    # 2. Supervisor suspende viagem por ressaca marítima
+    res_suspend = client.post(
+        "/api/v1/operations/suspend-trip",
+        json={
+            "route": "Salvador ➔ Mar Grande",
+            "affected_time": "17:30",
+            "reason": "Ventos fortes no canal de Itaparica com ondas de 2.5m.",
+            "severity": "CRITICAL",
+            "suspended_by": "Capitania dos Portos / Supervisor",
+        },
+    )
+    assert res_suspend.status_code == 200
+    susp_data = res_suspend.json()["suspension"]
+    susp_id = susp_data["id"]
+    assert susp_data["status"] == "ACTIVE"
+
+    # 3. Verifica que alerta passou a constar na lista pública
+    res_check = client.get("/api/v1/operations/active-alerts")
+    active_ids = [a["id"] for a in res_check.json()]
+    assert susp_id in active_ids
+
+    # 4. Reativa a viagem após normalização do mar
+    res_resume = client.post(
+        "/api/v1/operations/resume-trip",
+        json={
+            "suspension_id": susp_id,
+            "resumed_by": "Supervisor de Plantão",
+        },
+    )
+    assert res_resume.status_code == 200
+    assert res_resume.json()["suspension"]["status"] == "RESOLVED"
+
+
+

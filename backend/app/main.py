@@ -9,6 +9,8 @@ from app.modules.payments.router import router as payments_router
 from app.modules.tickets.router import router as tickets_router
 from app.modules.boarding.router import router as boarding_router
 from app.modules.refunds.router import router as refunds_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.operations.router import router as operations_router
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -36,6 +38,8 @@ app.include_router(payments_router, prefix=settings.API_V1_PREFIX)
 app.include_router(tickets_router, prefix=settings.API_V1_PREFIX)
 app.include_router(boarding_router, prefix=settings.API_V1_PREFIX)
 app.include_router(refunds_router, prefix=settings.API_V1_PREFIX)
+app.include_router(notifications_router, prefix=settings.API_V1_PREFIX)
+app.include_router(operations_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health", tags=["Health"])

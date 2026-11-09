@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, ChevronDown, Star } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Star, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { api } from '../services/api';
 
 interface HomePageProps {
   onOpenMenu: () => void;
@@ -8,20 +9,50 @@ interface HomePageProps {
 
 export const HomePage: React.FC<HomePageProps> = () => {
   const navigate = useNavigate();
+  const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadAlerts() {
+      try {
+        const res = await api.get('/operations/active-alerts');
+        setActiveAlerts(res.data);
+      } catch (err) {
+        // Fallback silencioso
+      }
+    }
+    loadAlerts();
+  }, []);
+
+  const firstAlert = activeAlerts.length > 0 ? activeAlerts[0] : null;
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] flex flex-col justify-between">
       <div>
-        {/* Banner de Situação Operacional (Figma Tela 1 - Rectangle 1) */}
-        <div
-          onClick={() => navigate('/horarios')}
-          className="bg-ttnb-mint px-4 py-2.5 flex items-center justify-between cursor-pointer border-b border-[#d8ebe1] hover:bg-[#e2f0e8] transition-colors"
-        >
-          <p className="text-[11px] font-bold text-ttnb-teal">
-            Situação das travessias: operação normal
-          </p>
-          <ArrowUpRight className="w-3.5 h-3.5 text-ttnb-teal" />
-        </div>
+        {/* Banner de Situação Operacional Dinâmico (Figma Tela 1 + Alerta de Mau Tempo) */}
+        {firstAlert ? (
+          <div
+            onClick={() => navigate('/status')}
+            className="bg-amber-50 px-4 py-2.5 flex items-center justify-between cursor-pointer border-b border-amber-200 hover:bg-amber-100 transition-colors"
+          >
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+              <p className="text-[11px] font-bold text-amber-900 truncate">
+                Aviso: {firstAlert.route} ({firstAlert.affected_time}) - {firstAlert.reason}
+              </p>
+            </div>
+            <ArrowUpRight className="w-3.5 h-3.5 text-amber-700 shrink-0 ml-1" />
+          </div>
+        ) : (
+          <div
+            onClick={() => navigate('/horarios')}
+            className="bg-ttnb-mint px-4 py-2.5 flex items-center justify-between cursor-pointer border-b border-[#d8ebe1] hover:bg-[#e2f0e8] transition-colors"
+          >
+            <p className="text-[11px] font-bold text-ttnb-teal">
+              Situação das travessias: operação normal
+            </p>
+            <ArrowUpRight className="w-3.5 h-3.5 text-ttnb-teal" />
+          </div>
+        )}
 
         {/* Hero Section */}
         <div className="px-5 pt-6 pb-4">

@@ -111,6 +111,19 @@ def issue_tickets_for_booking(booking: dict):
     booking["tickets"] = tickets_created
     booking["status"] = "CONFIRMED"
     booking["confirmed_at"] = datetime.now(timezone.utc).isoformat()
+
+    # Dispara e-mail de notificação de forma assíncrona
+    try:
+        import asyncio
+        from app.modules.notifications.service import dispatch_ticket_notification
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(dispatch_ticket_notification(booking, tickets_created))
+        except RuntimeError:
+            pass
+    except Exception:
+        pass
+
     return tickets_created
 
 

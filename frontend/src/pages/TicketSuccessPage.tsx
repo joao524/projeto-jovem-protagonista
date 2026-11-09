@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Check, ArrowRight, Share2, Printer, Anchor } from 'lucide-react';
+import { Check, ArrowRight, Share2, Printer, Anchor, Mail, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
 
 export const TicketSuccessPage: React.FC = () => {
@@ -10,6 +10,8 @@ export const TicketSuccessPage: React.FC = () => {
 
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [emailSent, setEmailSent] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     async function fetchTicket() {
@@ -26,6 +28,20 @@ export const TicketSuccessPage: React.FC = () => {
     }
     fetchTicket();
   }, [ticketId]);
+
+  const handleResendEmail = async () => {
+    if (!ticket?.booking_id) return;
+    try {
+      setSendingEmail(true);
+      await api.post(`/notifications/resend/${ticket.booking_id}`);
+      setEmailSent(true);
+      setTimeout(() => setEmailSent(false), 4000);
+    } catch (err) {
+      alert('Erro ao reenviar e-mail com comprovante.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -151,6 +167,24 @@ export const TicketSuccessPage: React.FC = () => {
               {displayCode} · QR PASSAGEM
             </p>
           </div>
+        </div>
+
+        {/* Notificação de Envio por E-mail */}
+        <div className="mt-3.5 p-3 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between no-print">
+          <div className="flex items-center space-x-2 text-xs">
+            <Mail className="w-4 h-4 text-ttnb-teal shrink-0" />
+            <div>
+              <p className="font-bold text-ttnb-blue">Comprovante Digital Enviado</p>
+              <p className="text-[10px] text-slate-500">Cópia com QR code despachada para seu e-mail.</p>
+            </div>
+          </div>
+          <button
+            onClick={handleResendEmail}
+            disabled={sendingEmail}
+            className="text-[11px] font-bold text-ttnb-teal hover:text-ttnb-blue underline cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {sendingEmail ? 'Enviando...' : emailSent ? 'Reenviado!' : 'Reenviar'}
+          </button>
         </div>
       </div>
 
