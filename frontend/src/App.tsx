@@ -68,12 +68,20 @@ const AppContent: React.FC = () => {
           <Route path="/previsao-tempo" element={<WeatherPage />} />
           <Route path="/noticias" element={<NewsPage />} />
           <Route path="/atualizacao-operacional" element={<OperationalStatusPage />} />
+          <Route path="/status" element={<OperationalStatusPage />} />
+          <Route path="/aviso" element={<OperationalStatusPage />} />
+          <Route path="/avisos" element={<OperationalStatusPage />} />
           <Route path="/minha-conta" element={<PassengerAreaPage />} />
+          <Route path="/passageiro" element={<PassengerAreaPage />} />
           
           {/* Módulos Operacionais */}
           <Route path="/operador/embarque" element={<OperatorBoardingPage />} />
           <Route path="/operador/caixa" element={<OperatorPosPage />} />
+          <Route path="/operador/pos" element={<OperatorPosPage />} />
           <Route path="/admin/reembolsos" element={<AdminRefundsPage />} />
+
+          {/* Rota Fallback para prevenir qualquer tela em branco */}
+          <Route path="*" element={<HomePage onOpenMenu={() => setIsMenuOpen(true)} />} />
         </Routes>
       </main>
     </div>
