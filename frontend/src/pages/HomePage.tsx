@@ -10,6 +10,7 @@ import {
   Waves,
   BellRing,
   ArrowRight,
+  X,
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -20,31 +21,29 @@ interface HomePageProps {
 export const HomePage: React.FC<HomePageProps> = () => {
   const navigate = useNavigate();
   const [activeAlerts, setActiveAlerts] = useState<any[]>([]);
+  const [isDismissed, setIsDismissed] = useState(() => {
+    return sessionStorage.getItem('ttnb_alert_dismissed') === 'true';
+  });
 
   useEffect(() => {
     async function loadAlerts() {
       try {
         const res = await api.get('/operations/active-alerts');
-        if (res.data && res.data.length > 0) {
-          setActiveAlerts(res.data);
-        }
+        setActiveAlerts(res.data || []);
       } catch (err) {
-        // Fallback para alerta de teste caso a API oscile
-        setActiveAlerts([
-          {
-            id: 'susp-1',
-            route: 'Salvador ➔ Morro de São Paulo',
-            affected_time: '14:30',
-            reason: 'Ventos fortes no trecho oceânico acima de 28 nós.',
-            severity: 'WARNING',
-          },
-        ]);
+        setActiveAlerts([]);
       }
     }
     loadAlerts();
   }, []);
 
-  const firstAlert = activeAlerts.length > 0 ? activeAlerts[0] : null;
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDismissed(true);
+    sessionStorage.setItem('ttnb_alert_dismissed', 'true');
+  };
+
+  const firstAlert = activeAlerts.length > 0 && !isDismissed ? activeAlerts[0] : null;
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] flex flex-col justify-between">
@@ -53,17 +52,28 @@ export const HomePage: React.FC<HomePageProps> = () => {
         {firstAlert ? (
           <div
             onClick={() => navigate('/status')}
-            className="m-3 p-3.5 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100/70 border-l-4 border-l-amber-500 border border-amber-200 rounded-md shadow-xs cursor-pointer hover:shadow-sm transition-all group"
+            className="m-3 p-3.5 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100/70 border-l-4 border-l-amber-500 border border-amber-200 rounded-md shadow-xs cursor-pointer hover:shadow-sm transition-all group relative"
           >
             <div className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full tracking-wider uppercase shadow-xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
                 ALERTA OPERACIONAL
               </span>
-              <span className="text-[11px] font-bold text-amber-900 group-hover:text-amber-700 flex items-center gap-1">
-                <span>Ver detalhes</span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-              </span>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-[11px] font-bold text-amber-900 group-hover:text-amber-700 flex items-center gap-1">
+                  <span>Ver detalhes</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  title="Dispensar aviso"
+                  className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-black/5 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-2">
