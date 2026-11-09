@@ -16,6 +16,7 @@ import {
   LifeBuoy,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 const DEFAULT_ALERTS = [
   {
@@ -33,6 +34,7 @@ const DEFAULT_ALERTS = [
 
 export const OperationalStatusPage: React.FC = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [activeAlerts, setActiveAlerts] = useState<any[]>(DEFAULT_ALERTS);
   const [loading, setLoading] = useState(false);
   const [showSupervisorModal, setShowSupervisorModal] = useState(false);
@@ -71,10 +73,11 @@ export const OperationalStatusPage: React.FC = () => {
         severity,
         suspended_by: 'Supervisor de Operações',
       });
+      toast.success('Suspensão de viagem registrada no sistema.');
       setShowSupervisorModal(false);
       fetchAlerts();
-    } catch (err) {
-      alert('Erro ao registrar suspensão de viagem.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Erro ao registrar suspensão de viagem.');
     }
   };
 
@@ -84,9 +87,10 @@ export const OperationalStatusPage: React.FC = () => {
         suspension_id: suspensionId,
         resumed_by: 'Supervisor de Operações',
       });
+      toast.success('Viagem reativada com sucesso.');
       fetchAlerts();
-    } catch (err) {
-      alert('Erro ao reativar viagem.');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Erro ao reativar viagem.');
     }
   };
 

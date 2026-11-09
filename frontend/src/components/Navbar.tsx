@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, ArrowLeft, Anchor, Ticket } from 'lucide-react';
+import { Menu, ArrowLeft, Anchor, Ticket, User as UserIcon, LogIn } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMenu: () => void;
@@ -17,6 +17,24 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const checkUser = () => {
+      try {
+        const raw = localStorage.getItem('ttnb_user');
+        if (raw) {
+          setCurrentUser(JSON.parse(raw));
+          return;
+        }
+      } catch {}
+      setCurrentUser(null);
+    };
+
+    checkUser();
+    window.addEventListener('storage', checkUser);
+    return () => window.removeEventListener('storage', checkUser);
+  }, []);
 
   const handleBack = () => {
     if (onBack) {
@@ -107,6 +125,29 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Direita: CTA Big Tech e Botão Menu */}
         <div className="flex items-center space-x-3 sm:space-x-4">
+          {currentUser ? (
+            <button
+              onClick={() => navigate('/minha-conta')}
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 text-slate-800 text-xs font-bold transition-all cursor-pointer border border-slate-200/60"
+              title="Acessar Área do Passageiro"
+            >
+              <div className="w-5 h-5 rounded-full bg-ttnb-blue text-white flex items-center justify-center text-[10px]">
+                {(currentUser.full_name || currentUser.email || 'U').charAt(0).toUpperCase()}
+              </div>
+              <span className="truncate max-w-[120px]">
+                {currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Minha Conta'}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-ttnb-blue px-3 py-2 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Entrar</span>
+            </button>
+          )}
+
           {/* Botão Pílula "Comprar passagem" */}
           <button
             onClick={() => navigate('/horarios')}

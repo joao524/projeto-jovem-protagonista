@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Lock, ArrowRight, CreditCard, ShieldCheck } from 'lucide-react';
+import { Lock, ArrowRight, CreditCard, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 export const CardPaymentPage: React.FC = () => {
   const navigate = useNavigate();
   const { bookingId } = useParams();
+  const toast = useToast();
 
   const [booking, setBooking] = useState<any>(null);
   const [cardName, setCardName] = useState('');
@@ -14,7 +16,6 @@ export const CardPaymentPage: React.FC = () => {
   const [cvv, setCvv] = useState('');
   const [installments, setInstallments] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     async function fetchBooking() {
@@ -24,6 +25,7 @@ export const CardPaymentPage: React.FC = () => {
         setBooking(res.data);
       } catch (err) {
         console.error('Erro ao buscar reserva', err);
+        toast.error('Erro ao recuperar reserva.');
       }
     }
     fetchBooking();
@@ -46,10 +48,9 @@ export const CardPaymentPage: React.FC = () => {
 
   const handleProcessPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMsg('');
 
     if (!cardName.trim() || !cardNumber.trim() || !expiry.trim() || !cvv.trim()) {
-      setErrorMsg('Preencha todos os campos do cartão para prosseguir.');
+      toast.warning('Preencha todos os campos do cartão para prosseguir.');
       return;
     }
 
@@ -65,14 +66,15 @@ export const CardPaymentPage: React.FC = () => {
       });
 
       const tickets = res.data.tickets;
+      toast.success('Pagamento com cartão aprovado com sucesso!');
       if (tickets && tickets.length > 0) {
         navigate(`/bilhete/${tickets[0].id}`);
       } else {
         navigate('/minha-conta');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao processar cartão', err);
-      setErrorMsg('Não foi possível processar o cartão. Tente novamente.');
+      toast.error(err.response?.data?.detail || 'Não foi possível processar o cartão. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -81,120 +83,129 @@ export const CardPaymentPage: React.FC = () => {
   const totalAmount = booking?.total_amount || 8.0;
 
   return (
-    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-between">
       <div>
-        {/* Título da Tela */}
-        <div className="mt-1">
-          <h1 className="text-[28px] font-bold text-ttnb-blue">
-            Cartão de crédito.
+        {/* Header Big Tech */}
+        <div className="pb-6 border-b border-slate-200/80">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider mb-2 border border-slate-200">
+            <CreditCard className="w-3.5 h-3.5 text-ttnb-teal" />
+            <span>PAGAMENTO COM CARTÃO</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+            Cartão de Crédito
           </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Simulação de pagamento aprovada sem cobrança real.
+          </p>
         </div>
 
-        {/* Card Valor Total (Figma: Rectangle 20) */}
-        <div className="mt-3.5 bg-white border border-ttnb-border rounded-md p-3.5 flex items-center justify-between shadow-2xs">
-          <span className="text-[12px] font-bold text-ttnb-blue">Valor total</span>
-          <span className="text-[20px] font-extrabold text-ttnb-blue">
+        {/* Card Valor Total */}
+        <div className="mt-6 p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs flex items-center justify-between">
+          <div>
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+              VALOR DA TRANSAÇÃO
+            </span>
+            <span className="text-xs text-slate-500 mt-0.5 block">Emissão imediata de bilhete</span>
+          </div>
+          <span className="text-2xl font-black text-slate-900">
             R$ {totalAmount.toFixed(2).replace('.', ',')}
           </span>
         </div>
 
         {/* Formulário do Cartão */}
-        <form onSubmit={handleProcessPayment} className="mt-4 space-y-3.5">
+        <form onSubmit={handleProcessPayment} className="mt-6 space-y-4">
           <div>
-            <label className="text-[11px] font-bold text-ttnb-blue block mb-1">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-1.5">
               Nome impresso no cartão
             </label>
             <input
               type="text"
-              placeholder="Informe o nome como consta no cartão"
+              placeholder="Ex: ANA COSTA"
               value={cardName}
-              onChange={(e) => setCardName(e.target.value)}
-              className="w-full p-3 bg-white border border-ttnb-border rounded-md text-[13px] uppercase focus:outline-none focus:border-ttnb-blue"
+              onChange={(e) => setCardName(e.target.value.toUpperCase())}
+              className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold uppercase focus:border-ttnb-blue focus:outline-none shadow-2xs"
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-ttnb-blue block mb-1">
+            <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-1.5">
               Número do cartão
             </label>
             <input
               type="text"
               placeholder="0000 0000 0000 0000"
+              maxLength={19}
               value={cardNumber}
               onChange={handleCardNumberChange}
-              maxLength={19}
-              className="w-full p-3 bg-white border border-ttnb-border rounded-md text-[13px] font-mono tracking-wider focus:outline-none focus:border-ttnb-blue"
+              className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm font-mono font-semibold focus:border-ttnb-blue focus:outline-none shadow-2xs"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="text-[11px] font-bold text-ttnb-blue block mb-1">
-                Validade
+              <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-1.5">
+                Validade (MM / AA)
               </label>
               <input
                 type="text"
-                placeholder="MM / AA"
+                placeholder="12 / 28"
+                maxLength={7}
                 value={expiry}
                 onChange={handleExpiryChange}
-                maxLength={7}
-                className="w-full p-3 bg-white border border-ttnb-border rounded-md text-[13px] text-center font-mono focus:outline-none focus:border-ttnb-blue"
+                className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm font-mono font-semibold focus:border-ttnb-blue focus:outline-none shadow-2xs"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-ttnb-blue block mb-1">
-                CVV
+              <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-1.5">
+                Código CVV
               </label>
               <input
                 type="password"
-                placeholder="•••"
-                value={cvv}
-                onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').substring(0, 4))}
+                placeholder="123"
                 maxLength={4}
-                className="w-full p-3 bg-white border border-ttnb-border rounded-md text-[13px] text-center font-mono tracking-widest focus:outline-none focus:border-ttnb-blue"
+                value={cvv}
+                onChange={(e) => setCvv(e.target.value.replace(/\D/g, ''))}
+                className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm font-mono font-semibold focus:border-ttnb-blue focus:outline-none shadow-2xs"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[11px] font-bold text-ttnb-blue block mb-1">
-              Parcelas
+            <label className="text-xs font-black text-slate-500 uppercase tracking-wider block mb-1.5">
+              Parcelamento
             </label>
-            <div className="w-full p-3 bg-white border border-ttnb-border rounded-md text-[13px] font-medium text-ttnb-dark flex items-center justify-between">
-              <span>1x de R$ {totalAmount.toFixed(2).replace('.', ',')} sem juros</span>
-            </div>
+            <select
+              value={installments}
+              onChange={(e) => setInstallments(Number(e.target.value))}
+              className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:border-ttnb-blue focus:outline-none shadow-2xs"
+            >
+              <option value={1}>
+                1x de R$ {totalAmount.toFixed(2).replace('.', ',')} (sem juros)
+              </option>
+              <option value={2}>
+                2x de R$ {(totalAmount / 2).toFixed(2).replace('.', ',')} (sem juros)
+              </option>
+            </select>
           </div>
 
-          {errorMsg && (
-            <div className="p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Banner LGPD (Figma: Rectangle 20 + Lock_Slash) */}
-          <div className="mt-4 bg-[#f9f9f9] border border-[#e5e5e5] rounded-md p-3 flex items-center space-x-2 text-[11px] text-[#615f5e]">
-            <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
-            <p className="leading-snug">
-              Política de privacidade e LGPD, dados não retidos pelo sistema.
-            </p>
+          {/* Garantia de Segurança */}
+          <div className="pt-2 flex items-center justify-center space-x-2 text-xs text-slate-400">
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Transação segura • Tokenização simulada sem cobrança bancária</span>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-4 bg-ttnb-orange hover:bg-[#d96728] text-white font-bold py-3.5 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60"
-          >
-            <span>{loading ? 'Validando transação...' : 'Ir para passagem'}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-ttnb-orange hover:bg-[#d96728] active:scale-98 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-60 text-base"
+            >
+              <span>{loading ? 'Processando transação...' : `Confirmar R$ ${totalAmount.toFixed(2).replace('.', ',')}`}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </form>
-      </div>
-
-      <div className="mt-6 pt-4 text-center">
-        <p className="text-[10px] text-[#887878]">
-          Ambiente de teste e homologação sem cobrança real.
-        </p>
       </div>
     </div>
   );

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Check, X, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 export const AdminRefundsPage: React.FC = () => {
+  const toast = useToast();
   const [refunds, setRefunds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,10 +42,11 @@ export const AdminRefundsPage: React.FC = () => {
         decision: decision,
         rejection_reason: decision === 'REJECT' ? 'Solicitação fora do prazo regulamentar.' : null,
       });
+      toast.success(`Reembolso ${decision === 'APPROVE' ? 'aprovado' : 'rejeitado'} com sucesso!`);
       fetchRefunds();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao revisar reembolso', err);
-      alert('Erro ao processar decisão de reembolso.');
+      toast.error(err.response?.data?.detail || 'Erro ao processar decisão de reembolso.');
     }
   };
 
@@ -54,11 +57,12 @@ export const AdminRefundsPage: React.FC = () => {
         disbursed_by: 'Operador de Caixa do Guichê',
         receipt_reference: receiptRef,
       });
+      toast.success('Pagamento de reembolso efetivado no caixa!');
       setDisbursingRefundId(null);
       fetchRefunds();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao efetivar pagamento de reembolso', err);
-      alert('Erro ao efetivar pagamento no caixa.');
+      toast.error(err.response?.data?.detail || 'Erro ao efetivar pagamento no caixa.');
     }
   };
 
@@ -71,12 +75,13 @@ export const AdminRefundsPage: React.FC = () => {
         reason: reasonInput,
         operator_name: 'Operador Guichê 01',
       });
+      toast.success('Solicitação de reembolso registrada com sucesso!');
       setShowNewModal(false);
       setBookingIdInput('');
       fetchRefunds();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao abrir solicitação', err);
-      alert('Não foi possível registrar o pedido de reembolso.');
+      toast.error(err.response?.data?.detail || 'Não foi possível registrar o pedido de reembolso.');
     }
   };
 

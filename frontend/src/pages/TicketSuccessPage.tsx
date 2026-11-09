@@ -3,10 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Check, ArrowRight, Share2, Printer, Anchor, Mail, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 export const TicketSuccessPage: React.FC = () => {
   const navigate = useNavigate();
   const { ticketId } = useParams();
+  const toast = useToast();
 
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -35,9 +37,10 @@ export const TicketSuccessPage: React.FC = () => {
       setSendingEmail(true);
       await api.post(`/notifications/resend/${ticket.booking_id}`);
       setEmailSent(true);
+      toast.success('Comprovante reenviado para o seu e-mail!');
       setTimeout(() => setEmailSent(false), 4000);
-    } catch (err) {
-      alert('Erro ao reenviar e-mail com comprovante.');
+    } catch (err: any) {
+      toast.error('Erro ao reenviar e-mail com comprovante.');
     } finally {
       setSendingEmail(false);
     }

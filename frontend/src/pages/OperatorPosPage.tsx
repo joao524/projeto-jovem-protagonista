@@ -15,9 +15,11 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useToast } from '../components/Toast';
 
 export const OperatorPosPage: React.FC = () => {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<'POS' | 'CASH_REGISTER'>('POS');
   const [destination, setDestination] = useState('Mar Grande');
@@ -93,10 +95,11 @@ export const OperatorPosPage: React.FC = () => {
       const tickets = paymentRes.data.tickets;
       if (tickets && tickets.length > 0) {
         setIssuedTicketId(tickets[0].id);
+        toast.success('Passagem emitida com sucesso no caixa!');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro na emissão presencial', err);
-      alert('Erro ao emitir passagem no caixa.');
+      toast.error(err.response?.data?.detail || 'Erro ao emitir passagem no caixa.');
     } finally {
       setLoading(false);
     }
@@ -114,9 +117,10 @@ export const OperatorPosPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      toast.success('Relatório CSV de fechamento exportado com sucesso!');
     } catch (err) {
       console.error('Erro ao baixar relatório', err);
-      alert('Erro ao baixar relatório CSV.');
+      toast.error('Erro ao baixar relatório CSV.');
     }
   };
 
