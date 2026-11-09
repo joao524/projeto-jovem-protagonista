@@ -108,7 +108,7 @@ export const PassengerAreaPage: React.FC = () => {
   const latestBooking = myBookings.length > 0 ? myBookings[0] : null;
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-4xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-6 flex flex-col justify-between">
       <div>
         {/* Título da Tela */}
         <div className="mt-1">

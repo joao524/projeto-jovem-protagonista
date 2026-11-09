@@ -121,7 +121,7 @@ export const OperatorPosPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4">
+    <div className="max-w-4xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-6">
       {/* Cabeçalho */}
       <div className="border-b border-[#e5e5e5] pb-3">
         <span className="text-[10px] font-bold text-ttnb-teal uppercase tracking-wider block">

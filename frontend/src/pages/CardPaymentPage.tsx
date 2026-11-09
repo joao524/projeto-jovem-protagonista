@@ -81,7 +81,7 @@ export const CardPaymentPage: React.FC = () => {
   const totalAmount = booking?.total_amount || 8.0;
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
       <div>
         {/* Título da Tela */}
         <div className="mt-1">

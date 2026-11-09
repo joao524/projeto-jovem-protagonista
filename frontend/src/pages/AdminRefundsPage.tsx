@@ -81,7 +81,7 @@ export const AdminRefundsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4">
+    <div className="max-w-4xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
         <div>
           <span className="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">

@@ -106,7 +106,7 @@ export const AuthPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
       <div>
         {/* Resumo da Reserva Pendente no Topo (se houver) */}
         {bookingSummary && (

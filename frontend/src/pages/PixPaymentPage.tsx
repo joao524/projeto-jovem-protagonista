@@ -70,14 +70,14 @@ export const PixPaymentPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
+      <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
         Gerando QR Code Pix...
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
       <div className="text-center">
         {/* Ícone de Ampulheta Circular (Figma: Ellipse 1 + Hourglass) */}
         <div className="w-14 h-14 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mt-2">

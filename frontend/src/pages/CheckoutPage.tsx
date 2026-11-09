@@ -37,7 +37,7 @@ export const CheckoutPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
+      <div className="max-w-2xl mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
         Carregando detalhes do pagamento...
       </div>
     );
@@ -45,7 +45,7 @@ export const CheckoutPage: React.FC = () => {
 
   if (!booking) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] p-5 text-center">
+      <div className="max-w-2xl mx-auto min-h-screen bg-[#fffefa] p-5 text-center">
         <p className="text-red-600 font-bold">Reserva não encontrada.</p>
         <button
           onClick={() => navigate('/horarios')}
@@ -58,7 +58,7 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-2xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
       <div>
         {/* Título da Tela */}
         <div className="mt-1">

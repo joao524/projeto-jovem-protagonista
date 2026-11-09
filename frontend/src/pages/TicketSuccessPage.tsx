@@ -45,7 +45,7 @@ export const TicketSuccessPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
+      <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] flex items-center justify-center text-[#615f5e]">
         Carregando seu bilhete de embarque...
       </div>
     );
@@ -58,7 +58,7 @@ export const TicketSuccessPage: React.FC = () => {
   const qrPayload = ticket?.qr_payload || `${ticketId || 'tck-1'}:${displayCode}:sample_signature`;
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
+    <div className="max-w-xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 py-6 flex flex-col justify-between">
       <div>
         {/* Ícone de Sucesso Circular (Figma: Ellipse 1 + Interface / Check) */}
         <div className="text-center mt-2 no-print">
