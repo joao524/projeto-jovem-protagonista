@@ -1,26 +1,3 @@
-import sys
-import types
-
-# Shim de compatibilidade para ambientes com política restritiva de DLLs no Windows
-if "greenlet" not in sys.modules:
-    try:
-        import greenlet  # noqa
-    except Exception:
-        g = types.ModuleType("greenlet")
-        class _DummyGreenlet:
-            gr_context = None
-            def __init__(self, run=None, parent=None):
-                self.run = run
-                self.parent = parent
-            def switch(self, *a, **k):
-                return self.run(*a, **k) if self.run else None
-        g.greenlet = _DummyGreenlet
-        g.getcurrent = lambda: _DummyGreenlet()
-        g._C_API = None
-        g.GreenletExit = type("GreenletExit", (Exception,), {})
-        g.error = type("error", (Exception,), {})
-        sys.modules["greenlet"] = g
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
