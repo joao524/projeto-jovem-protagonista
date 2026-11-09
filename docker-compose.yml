@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ttnb_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ttnb_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ttnb_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-ttnb_ferry_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ttnb_admin -d ttnb_ferry_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ttnb_backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://ttnb_admin:ttnb_secure_password_2026@postgres:5432/ttnb_ferry_db
+      - JWT_SECRET_KEY=dev_secret_key_change_in_production_ferry_2026
+      - QR_SIGNATURE_KEY=dev_qr_hmac_secret_key_super_secure_32bytes!
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ttnb_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:

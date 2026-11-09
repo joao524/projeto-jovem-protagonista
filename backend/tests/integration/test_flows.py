@@ -105,3 +105,91 @@ def test_complete_booking_payment_and_boarding_cycle():
     board2_data = res_board2.json()
     assert board2_data["result"] == "DENIED"
     assert "BILHETE_JA_UTILIZADO" in board2_data["reason"]
+
+
+def test_vehicle_plate_editing_and_audit_rules():
+    # 1. Cria reserva com veículo (placa Mercosul inicial)
+    res = client.post(
+        "/api/v1/bookings",
+        json={
+            "route_id": "11111111-1111-1111-1111-111111111111",
+            "trip_id": "33333333-3333-3333-3333-333333333303",
+            "travel_date": "24 nov. 2026",
+            "departure_time": "08:00",
+            "origin": "Salvador",
+            "destination": "Mar Grande",
+            "operator": "Marina Socicam",
+            "passengers": [
+                {
+                    "full_name": "Mariana Souza",
+                    "document_number": "987.654.321-00",
+                    "passenger_type": "ADULT",
+                }
+            ],
+            "vehicle": {
+                "category_code": "CAR_STD",
+                "plate": "bra-2e19",
+                "driver_name": "Mariana Souza",
+            },
+            "customer_email": "mariana@email.com",
+            "customer_name": "Mariana Souza",
+        },
+    )
+    assert res.status_code == 201
+    booking_data = res.json()
+    booking_id = booking_data["id"]
+    assert booking_data["vehicle"]["license_plate"] == "BRA2E19"
+    assert len(booking_data["vehicle_plate_history"]) == 1
+
+    # 2. Atualiza placa para nova placa válida (Mercosul)
+    res_update = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        json={
+            "new_plate": "BAH-8A22",
+            "reason": "Troquei de carro para a viagem",
+            "changed_by": "Mariana Souza",
+        },
+    )
+    assert res_update.status_code == 200
+    updated_data = res_update.json()
+    assert updated_data["vehicle"]["license_plate"] == "BAH8A22"
+    assert len(updated_data["vehicle_plate_history"]) == 2
+    last_audit = updated_data["vehicle_plate_history"][-1]
+    assert last_audit["previous_plate"] == "BRA2E19"
+    assert last_audit["new_plate"] == "BAH8A22"
+    assert last_audit["reason"] == "Troquei de carro para a viagem"
+
+    # 3. Tentativa com placa inválida (deve falhar com 400)
+    res_invalid = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        json={"new_plate": "INVALID123"},
+    )
+    assert res_invalid.status_code == 400
+    assert "Placa inválida" in res_invalid.json()["detail"]
+
+    # 4. Tentativa com placa idêntica à atual (deve falhar com 400)
+    res_same = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        json={"new_plate": "BAH8A22"},
+    )
+    assert res_same.status_code == 400
+    assert "idêntica" in res_same.json()["detail"]
+
+    # 5. Confirma pagamento e realiza embarque
+    client.post(f"/api/v1/payments/confirm-pix/{booking_id}")
+    res_b = client.get(f"/api/v1/bookings/{booking_id}")
+    t = res_b.json()["tickets"][0]
+    client.post(
+        "/api/v1/boarding/validate",
+        json={"identifier": t["qr_payload"], "validator_name": "Fiscal", "method": "QR_SCAN"},
+    )
+
+    # 6. Tentativa de alterar placa APÓS embarque (DEVE BLOQUEAR com 400)
+    res_after_boarding = client.patch(
+        f"/api/v1/bookings/{booking_id}/vehicle-plate",
+        json={"new_plate": "ABC1234"},
+    )
+    assert res_after_boarding.status_code == 400
+    detail_msg = res_after_boarding.json()["detail"]
+    assert "BOARDED" in detail_msg or "validado" in detail_msg
+

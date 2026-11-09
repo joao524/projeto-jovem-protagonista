@@ -45,7 +45,7 @@ export const TicketSuccessPage: React.FC = () => {
     <div className="max-w-md mx-auto min-h-screen bg-[#fffefa] px-5 py-4 flex flex-col justify-between">
       <div>
         {/* Ícone de Sucesso Circular (Figma: Ellipse 1 + Interface / Check) */}
-        <div className="text-center mt-2">
+        <div className="text-center mt-2 no-print">
           <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto">
             <Check className="w-6 h-6 stroke-[3]" />
           </div>
@@ -62,7 +62,7 @@ export const TicketSuccessPage: React.FC = () => {
         </div>
 
         {/* Card do Bilhete de Embarque (Figma: Rectangle 19) */}
-        <div className="mt-5 bg-white border border-[#cfcfcf] rounded-ttnb-btn p-5 shadow-xs relative">
+        <div className="mt-5 bg-white border border-[#cfcfcf] rounded-ttnb-btn p-5 shadow-xs relative print-card">
           {/* Cabeçalho do Cartão */}
           <div className="flex items-center justify-between text-[11px] font-semibold text-ttnb-blue">
             <span className="flex items-center gap-1.5 font-bold">
@@ -155,7 +155,7 @@ export const TicketSuccessPage: React.FC = () => {
       </div>
 
       {/* Botões de Ação no Rodapé */}
-      <div className="mt-6 pt-4 border-t border-[#f0ece9] space-y-2">
+      <div className="mt-6 pt-4 border-t border-[#f0ece9] space-y-2 no-print">
         <button
           onClick={() => navigate('/')}
           className="w-full bg-ttnb-orange hover:bg-[#d96728] text-white font-bold py-3.5 px-4 rounded-ttnb-btn flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"

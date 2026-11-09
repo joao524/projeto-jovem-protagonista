@@ -28,3 +28,20 @@ body {
   background: #ccc;
   border-radius: 4px;
 }
+
+/* Print voucher formatting for boarding pass */
+@media print {
+  nav, button, .no-print {
+    display: none !important;
+  }
+  body, html {
+    background: #ffffff !important;
+  }
+  .print-card {
+    border: 1px solid #000000 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin: 0 auto;
+    max-width: 380px !important;
+  }
+}

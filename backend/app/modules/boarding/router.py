@@ -77,6 +77,17 @@ async def validate_ticket_boarding(data: ValidateBoardingRequest):
     ticket["boarded_at"] = now_str
     ticket["boarded_by"] = data.validator_name
 
+    # Sincroniza com a reserva pai no BOOKINGS_STORE
+    from app.modules.bookings.router import BOOKINGS_STORE
+    booking = BOOKINGS_STORE.get(ticket.get("booking_id"))
+    if booking:
+        for t in booking.get("tickets", []):
+            if t.get("id") == ticket.get("id"):
+                t["status"] = "USED"
+                t["boarded_at"] = now_str
+        # Se algum bilhete embarcou, marca status da reserva como BOARDED
+        booking["status"] = "BOARDED"
+
     log_entry = {
         "ticket_code": ticket["ticket_code"],
         "passenger_name": ticket["passenger_name"],

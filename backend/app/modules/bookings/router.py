@@ -1,4 +1,5 @@
 import random
+import re
 import string
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -12,6 +13,18 @@ router = APIRouter(prefix="/bookings", tags=["Reservas"])
 BOOKINGS_STORE = {}
 TICKETS_STORE = {}
 
+def validate_and_normalize_plate(plate: str) -> str:
+    cleaned = re.sub(r'[^A-Za-z0-9]', '', plate).upper()
+    # Mercosul format: ABC1D23 or Legacy: ABC1234
+    mercosul_pattern = r'^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$'
+    legacy_pattern = r'^[A-Z]{3}[0-9]{4}$'
+    if not (re.match(mercosul_pattern, cleaned) or re.match(legacy_pattern, cleaned)):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Placa inválida: '{plate}'. Formato esperado Mercosul (ex: BRA2E19) ou Padrão (ex: ABC1234)."
+        )
+    return cleaned
+
 class PassengerInput(BaseModel):
     full_name: str
     document_number: str
@@ -21,6 +34,11 @@ class VehicleInput(BaseModel):
     category_code: str
     plate: str
     driver_name: Optional[str] = None
+
+class UpdateVehiclePlateRequest(BaseModel):
+    new_plate: str
+    reason: Optional[str] = "Correção informada pelo passageiro"
+    changed_by: Optional[str] = "Passageiro"
 
 class CreateBookingRequest(BaseModel):
     route_id: str
@@ -50,6 +68,8 @@ class BookingResponse(BaseModel):
     seconds_remaining: int
     created_at: str
     tickets: List[dict] = []
+    vehicle: Optional[dict] = None
+    vehicle_plate_history: List[dict] = []
 
 def generate_booking_code() -> str:
     chars = string.ascii_uppercase + string.digits
@@ -65,9 +85,16 @@ async def create_booking(data: CreateBookingRequest):
     base_unit_price = 152.00 if "Morro" in data.destination else 8.00
     total = len(data.passengers) * base_unit_price
     
-    # Vehicle price if present
+    vehicle_dict = None
     if data.vehicle:
         total += 45.00  # Valor base de carro padrão
+        cleaned_plate = validate_and_normalize_plate(data.vehicle.plate)
+        vehicle_dict = {
+            "category_code": data.vehicle.category_code,
+            "license_plate": cleaned_plate,
+            "plate": cleaned_plate,
+            "driver_name": data.vehicle.driver_name,
+        }
         
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=15)
@@ -85,7 +112,16 @@ async def create_booking(data: CreateBookingRequest):
         "status": "PENDING_PAYMENT",
         "total_amount": float(total),
         "passengers": [p.model_dump() for p in data.passengers],
-        "vehicle": data.vehicle.model_dump() if data.vehicle else None,
+        "vehicle": vehicle_dict,
+        "vehicle_plate_history": [
+            {
+                "previous_plate": None,
+                "new_plate": vehicle_dict["license_plate"],
+                "changed_by": "Passageiro (Cadastro Inicial)",
+                "reason": "Cadastro inicial da reserva",
+                "changed_at": now.isoformat()
+            }
+        ] if vehicle_dict else [],
         "customer_email": data.customer_email or "passageiro@email.com",
         "customer_name": data.customer_name or (data.passengers[0].full_name if data.passengers else "Passageiro"),
         "created_at": now.isoformat(),
@@ -110,7 +146,9 @@ async def create_booking(data: CreateBookingRequest):
         expires_at=expires_at.isoformat(),
         seconds_remaining=900,
         created_at=now.isoformat(),
-        tickets=[]
+        tickets=[],
+        vehicle=vehicle_dict,
+        vehicle_plate_history=booking_data["vehicle_plate_history"]
     )
 
 @router.get("/my-bookings")
@@ -146,5 +184,67 @@ async def get_booking(booking_id: str):
         expires_at=booking["expires_at"],
         seconds_remaining=rem,
         created_at=booking["created_at"],
-        tickets=booking.get("tickets", [])
+        tickets=booking.get("tickets", []),
+        vehicle=booking.get("vehicle"),
+        vehicle_plate_history=booking.get("vehicle_plate_history", [])
     )
+
+@router.patch("/{booking_id}/vehicle-plate", response_model=BookingResponse)
+async def update_vehicle_plate(booking_id: str, payload: UpdateVehiclePlateRequest):
+    """
+    Regra de negócio confirmada: O passageiro pode corrigir a placa do veículo
+    até o momento do embarque, mediante registro de auditoria da alteração.
+    """
+    booking = BOOKINGS_STORE.get(booking_id)
+    if not booking:
+        raise HTTPException(status_code=404, detail="Reserva não encontrada.")
+    
+    if not booking.get("vehicle"):
+        raise HTTPException(status_code=400, detail="Esta reserva não possui veículo cadastrado.")
+    
+    # Bloquear se já embarcou ou cancelou
+    if booking.get("status") in ["BOARDED", "CANCELLED", "REFUNDED"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Não é permitido alterar a placa de uma reserva com status '{booking.get('status')}'."
+        )
+    
+    # Verificar se algum bilhete dessa reserva já foi utilizado para embarque
+    for ticket in booking.get("tickets", []):
+        if ticket.get("status") in ["BOARDED", "USED"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Não é possível alterar a placa pois o bilhete de embarque já foi validado no cais."
+            )
+            
+    new_cleaned_plate = validate_and_normalize_plate(payload.new_plate)
+    old_plate = booking["vehicle"].get("license_plate") or booking["vehicle"].get("plate")
+    
+    if old_plate == new_cleaned_plate:
+        raise HTTPException(status_code=400, detail="A nova placa informada é idêntica à atual.")
+        
+    now = datetime.now(timezone.utc)
+    
+    # Registro de auditoria obrigatório
+    history_entry = {
+        "previous_plate": old_plate,
+        "new_plate": new_cleaned_plate,
+        "changed_by": payload.changed_by or "Passageiro",
+        "reason": payload.reason or "Correção cadastral",
+        "changed_at": now.isoformat()
+    }
+    
+    if "vehicle_plate_history" not in booking:
+        booking["vehicle_plate_history"] = []
+    booking["vehicle_plate_history"].append(history_entry)
+    
+    # Atualiza placa no veículo
+    booking["vehicle"]["license_plate"] = new_cleaned_plate
+    booking["vehicle"]["plate"] = new_cleaned_plate
+    
+    # Atualiza em qualquer bilhete de veículo emitido
+    for t in booking.get("tickets", []):
+        if t.get("ticket_type") == "VEHICLE" or "license_plate" in t:
+            t["license_plate"] = new_cleaned_plate
+            
+    return await get_booking(booking_id)
