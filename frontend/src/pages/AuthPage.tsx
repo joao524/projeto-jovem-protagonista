@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
+import { safeStorage } from '../utils/storage';
 
 export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,8 +83,8 @@ export const AuthPage: React.FC = () => {
 
       if (isLoginMode) {
         const res = await api.post('/auth/login', { email, password });
-        localStorage.setItem('ttnb_token', res.data.access_token);
-        localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+        safeStorage.setItem('ttnb_token', res.data.access_token);
+        safeStorage.setItem('ttnb_user', res.data);
         window.dispatchEvent(new Event('storage'));
         toast.success(`Bem-vindo(a) de volta, ${res.data.email}!`);
       } else {
@@ -92,8 +93,8 @@ export const AuthPage: React.FC = () => {
           password,
           full_name: fullName,
         });
-        localStorage.setItem('ttnb_token', res.data.access_token);
-        localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+        safeStorage.setItem('ttnb_token', res.data.access_token);
+        safeStorage.setItem('ttnb_user', res.data);
         window.dispatchEvent(new Event('storage'));
         toast.success('Conta criada com sucesso!');
       }
@@ -113,8 +114,8 @@ export const AuthPage: React.FC = () => {
       setLoading(true);
       setErrorMsg('');
       const res = await api.post(`/auth/demo-token?role=${role}`);
-      localStorage.setItem('ttnb_token', res.data.access_token);
-      localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+      safeStorage.setItem('ttnb_token', res.data.access_token);
+      safeStorage.setItem('ttnb_user', res.data);
       window.dispatchEvent(new Event('storage'));
       toast.success(`Conectado como ${res.data.roles[0]} (${res.data.email})!`);
       navigate(redirectUrl);

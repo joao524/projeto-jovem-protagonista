@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -8,7 +8,6 @@ import {
   Clock,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
   QrCode,
 } from 'lucide-react';
 import { api } from '../services/api';
@@ -25,31 +24,56 @@ export const PixPaymentPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState(false);
 
+  const copyTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
     async function initPixSession() {
       if (!bookingId) return;
       try {
         setLoading(true);
         const res = await api.post('/payments/pix-session', { booking_id: bookingId });
-        setPixData(res.data);
+        if (isMounted) {
+          setPixData(res.data);
+        }
       } catch (err) {
         console.error('Erro ao gerar sessão Pix', err);
-        toast.error('Erro ao gerar cobrança Pix.');
+        if (isMounted) {
+          toast.error('Erro ao gerar cobrança Pix.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     initPixSession();
+    return () => {
+      isMounted = false;
+    };
   }, [bookingId]);
 
-  // Contador regressivo ao vivo
+  // Contador regressivo estável sem recriação de interval a cada segundo
   useEffect(() => {
-    if (secondsRemaining <= 0) return;
     const timer = setInterval(() => {
-      setSecondsRemaining((prev) => prev - 1);
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, [secondsRemaining]);
+  }, []);
 
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
@@ -60,7 +84,12 @@ export const PixPaymentPage: React.FC = () => {
     navigator.clipboard.writeText(pixData.pix_code);
     setCopied(true);
     toast.info('Código Pix copiado com sucesso!');
-    setTimeout(() => setCopied(false), 2500);
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+    copyTimeoutRef.current = setTimeout(() => {
+      setCopied(false);
+    }, 2500);
   };
 
   const handleConfirmPayment = async () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, ArrowLeft, Anchor, Ticket, User as UserIcon, LogIn } from 'lucide-react';
+import { safeStorage } from '../utils/storage';
 
 interface NavbarProps {
   onOpenMenu: () => void;
@@ -22,13 +23,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const checkUser = () => {
       try {
-        const raw = localStorage.getItem('ttnb_user');
-        if (raw) {
-          setCurrentUser(JSON.parse(raw));
-          return;
-        }
-      } catch {}
-      setCurrentUser(null);
+        const u = safeStorage.getItem<any>('ttnb_user');
+        setCurrentUser(u);
+      } catch {
+        setCurrentUser(null);
+      }
     };
 
     checkUser();

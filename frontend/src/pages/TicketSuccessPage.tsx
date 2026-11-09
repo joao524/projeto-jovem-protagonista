@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Check, ArrowRight, Share2, Printer, Anchor, Mail, CheckCircle2 } from 'lucide-react';
+import { Check, ArrowRight, Printer, Anchor, Mail } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
 
@@ -15,20 +15,38 @@ export const TicketSuccessPage: React.FC = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
 
+  const emailTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
+    return () => {
+      if (emailTimeoutRef.current) {
+        window.clearTimeout(emailTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
     async function fetchTicket() {
       if (!ticketId) return;
       try {
         setLoading(true);
         const res = await api.get(`/tickets/${ticketId}`);
-        setTicket(res.data);
+        if (isMounted) {
+          setTicket(res.data);
+        }
       } catch (err) {
         console.error('Erro ao buscar bilhete', err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     fetchTicket();
+    return () => {
+      isMounted = false;
+    };
   }, [ticketId]);
 
   const handleResendEmail = async () => {
@@ -38,7 +56,12 @@ export const TicketSuccessPage: React.FC = () => {
       await api.post(`/notifications/resend/${ticket.booking_id}`);
       setEmailSent(true);
       toast.success('Comprovante reenviado para o seu e-mail!');
-      setTimeout(() => setEmailSent(false), 4000);
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+      }
+      emailTimeoutRef.current = setTimeout(() => {
+        setEmailSent(false);
+      }, 4000);
     } catch (err: any) {
       toast.error('Erro ao reenviar e-mail com comprovante.');
     } finally {

@@ -36,8 +36,20 @@ export const OperatorBoardingPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchRecentLogs();
+    let isMounted = true;
+    const initLogs = async () => {
+      try {
+        const res = await api.get('/boarding/recent-logs');
+        if (isMounted) {
+          setRecentLogs(res.data);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar logs de embarque', err);
+      }
+    };
+    initLogs();
     return () => {
+      isMounted = false;
       stopCamera();
     };
   }, []);

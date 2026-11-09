@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -20,6 +20,7 @@ import {
   Check,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { safeStorage } from '../utils/storage';
 
 export const PassengerAreaPage: React.FC = () => {
   const navigate = useNavigate();
@@ -45,6 +46,16 @@ export const PassengerAreaPage: React.FC = () => {
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
 
+  const settingsTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (settingsTimeoutRef.current) {
+        window.clearTimeout(settingsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const loadBookings = async () => {
     try {
       const res = await api.get('/bookings/my-bookings');
@@ -66,9 +77,9 @@ export const PassengerAreaPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('ttnb_user');
+    const storedUser = safeStorage.getItem<any>('ttnb_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      setUser(storedUser);
     } else {
       setUser({ full_name: 'Ana Costa', email: 'ana@email.com' });
     }
@@ -83,7 +94,10 @@ export const PassengerAreaPage: React.FC = () => {
     try {
       await api.patch('/auth/me/config', { settings: userSettings });
       setSettingsSuccess(true);
-      setTimeout(() => setSettingsSuccess(false), 3000);
+      if (settingsTimeoutRef.current) {
+        clearTimeout(settingsTimeoutRef.current);
+      }
+      settingsTimeoutRef.current = setTimeout(() => setSettingsSuccess(false), 3000);
     } catch (err) {
       console.error('Erro ao salvar preferências:', err);
     } finally {
@@ -92,8 +106,8 @@ export const PassengerAreaPage: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('ttnb_token');
-    localStorage.removeItem('ttnb_user');
+    safeStorage.removeItem('ttnb_token');
+    safeStorage.removeItem('ttnb_user');
     navigate('/');
   };
 

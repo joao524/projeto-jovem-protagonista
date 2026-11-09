@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { safeStorage } from '../utils/storage';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
@@ -8,7 +9,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('ttnb_token');
+  const token = safeStorage.getItem<string>('ttnb_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

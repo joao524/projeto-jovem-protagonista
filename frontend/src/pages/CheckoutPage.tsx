@@ -25,20 +25,30 @@ export const CheckoutPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchBooking() {
       if (!bookingId) return;
       try {
         setLoading(true);
         const res = await api.get(`/bookings/${bookingId}`);
-        setBooking(res.data);
+        if (isMounted) {
+          setBooking(res.data);
+        }
       } catch (err) {
         console.error('Erro ao carregar checkout', err);
-        toast.error('Erro ao buscar dados da reserva.');
+        if (isMounted) {
+          toast.error('Erro ao buscar dados da reserva.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
     fetchBooking();
+    return () => {
+      isMounted = false;
+    };
   }, [bookingId]);
 
   const handleProceedPayment = () => {
@@ -79,7 +89,7 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-3xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32 sm:pb-12">
       {/* Header Big Tech */}
       <div className="pb-6 border-b border-slate-200/80">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider mb-2 border border-slate-200">
@@ -224,8 +234,8 @@ export const CheckoutPage: React.FC = () => {
           <span>Em conformidade com a LGPD • Criptografia TLS 1.3 de ponta a ponta</span>
         </div>
 
-        {/* Botão de Prosseguir */}
-        <div className="pt-4 border-t border-slate-200/80">
+        {/* Botão de Prosseguir Desktop */}
+        <div className="pt-4 border-t border-slate-200/80 hidden sm:block">
           <button
             onClick={handleProceedPayment}
             className="w-full bg-ttnb-orange hover:bg-[#d96728] active:scale-98 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md transition-all cursor-pointer text-base"
@@ -234,6 +244,26 @@ export const CheckoutPage: React.FC = () => {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* Barra Inferior Sticky Mobile */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-between gap-3">
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {selectedMethod === 'PIX' ? 'Via Pix' : 'Via Cartão'}
+          </span>
+          <span className="text-lg font-black text-slate-900 tracking-tight">
+            R$ {Number(booking.total_amount).toFixed(2).replace('.', ',')}
+          </span>
+        </div>
+
+        <button
+          onClick={handleProceedPayment}
+          className="bg-ttnb-orange hover:bg-[#d96728] active:scale-98 text-white font-bold py-3 px-5 rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer text-xs shrink-0"
+        >
+          <span>Pagar agora</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );

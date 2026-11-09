@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
+import { safeStorage } from '../utils/storage';
 
 const DEFAULT_TRIPS = [
   // Salvador -> Mar Grande
@@ -122,10 +123,11 @@ export const SchedulesPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
+    let isMounted = true;
     async function loadTrips() {
       try {
         const res = await api.get('/public/trips');
-        if (res.data && res.data.length > 0) {
+        if (isMounted && res.data && res.data.length > 0) {
           setTrips(res.data);
         }
       } catch (err) {
@@ -133,6 +135,9 @@ export const SchedulesPage: React.FC = () => {
       }
     }
     loadTrips();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const isMarGrande = selectedDestino === 'Mar Grande';
@@ -147,7 +152,7 @@ export const SchedulesPage: React.FC = () => {
       trip.operator
     )}&destino=${encodeURIComponent(selectedDestino)}`;
 
-    const token = localStorage.getItem('ttnb_token');
+    const token = safeStorage.getItem<string>('ttnb_token');
     if (!token) {
       toast.info('Para iniciar sua compra e emitir seu cartão de embarque, acesse ou crie sua conta.');
       navigate(`/login?redirect=${encodeURIComponent(bookingPath)}`);

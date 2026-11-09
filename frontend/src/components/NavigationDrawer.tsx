@@ -15,9 +15,9 @@ import {
   Coins,
   Phone,
   ShieldCheck,
-  Check,
 } from 'lucide-react';
 import { api } from '../services/api';
+import { safeStorage } from '../utils/storage';
 
 interface NavigationDrawerProps {
   isOpen: boolean;
@@ -32,15 +32,33 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const [currentRole, setCurrentRole] = useState<string>('VISITANTE');
   const [switching, setSwitching] = useState<boolean>(false);
 
+  // Trava de scroll do body e listener de tecla Escape com cleanup estrito
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('ttnb_user');
-      if (raw) {
-        const u = JSON.parse(raw);
-        if (u.roles && u.roles.length > 0) {
-          setCurrentRole(u.roles[0]);
-          return;
-        }
+      const u = safeStorage.getItem<any>('ttnb_user');
+      if (u && u.roles && u.roles.length > 0) {
+        setCurrentRole(u.roles[0]);
+        return;
       }
     } catch {
       // ignore
@@ -59,8 +77,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     setSwitching(true);
     try {
       const res = await api.post(`/auth/demo-token?role=${targetRole}`);
-      localStorage.setItem('ttnb_token', res.data.access_token);
-      localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+      safeStorage.setItem('ttnb_token', res.data.access_token);
+      safeStorage.setItem('ttnb_user', res.data);
       setCurrentRole(targetRole);
       window.dispatchEvent(new Event('storage'));
     } catch (err) {

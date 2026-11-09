@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../components/Toast';
+import { safeStorage } from '../utils/storage';
 
 const AVAILABLE_TIMES_MAR_GRANDE = [
   '05:00',
@@ -73,22 +74,14 @@ export const BookingPage: React.FC = () => {
 
   // Estado de Autenticação
   const [user, setUser] = useState<any>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('ttnb_token'));
+  const [token, setToken] = useState<string | null>(safeStorage.getItem<string>('ttnb_token'));
 
   useEffect(() => {
     const syncAuth = () => {
-      const currentToken = localStorage.getItem('ttnb_token');
-      const currentUser = localStorage.getItem('ttnb_user');
+      const currentToken = safeStorage.getItem<string>('ttnb_token');
+      const currentUser = safeStorage.getItem<any>('ttnb_user');
       setToken(currentToken);
-      if (currentUser) {
-        try {
-          setUser(JSON.parse(currentUser));
-        } catch {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
+      setUser(currentUser);
     };
     syncAuth();
     window.addEventListener('storage', syncAuth);
@@ -111,8 +104,8 @@ export const BookingPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await api.post('/auth/demo-token?role=passenger');
-      localStorage.setItem('ttnb_token', res.data.access_token);
-      localStorage.setItem('ttnb_user', JSON.stringify(res.data));
+      safeStorage.setItem('ttnb_token', res.data.access_token);
+      safeStorage.setItem('ttnb_user', res.data);
       setToken(res.data.access_token);
       setUser(res.data);
       window.dispatchEvent(new Event('storage'));
@@ -184,7 +177,7 @@ export const BookingPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div className="max-w-6xl mx-auto min-h-screen bg-[#fffefa] px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32 lg:pb-12">
       {/* Header Big Tech com Breadcrumbs */}
       <div className="pb-6 border-b border-slate-200/80">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider mb-2 border border-slate-200">
@@ -479,6 +472,28 @@ export const BookingPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* BARRA INFERIOR FLUTUANTE STICKY PARA DISPOSITIVOS MÓVEIS (UX ERGONOMICS) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            {passengerCount}x passageiro{passengerCount > 1 ? 's' : ''} {includeVehicle ? '+ veículo' : ''}
+          </span>
+          <span className="text-xl font-black text-slate-900 tracking-tight">
+            R$ {totalEstimated.toFixed(2).replace('.', ',')}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={loading}
+          className="bg-ttnb-orange hover:bg-[#d96728] active:scale-98 text-white font-bold py-3 px-5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-60 text-xs sm:text-sm shrink-0"
+        >
+          <span>{loading ? 'Aguarde...' : 'Prosseguir'}</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* MODAL: SELETOR DE HORÁRIO INTERATIVO */}
