@@ -45,63 +45,66 @@ export const HomePage: React.FC<HomePageProps> = () => {
     sessionStorage.setItem('ttnb_alert_dismissed', 'true');
   };
 
-  const firstAlert = activeAlerts.length > 0 && !isDismissed ? activeAlerts[0] : null;
+  const hasActiveAlerts = activeAlerts.length > 0;
+  const firstAlert = hasActiveAlerts ? activeAlerts[0] : null;
 
   return (
     <div className="min-h-screen bg-[#fffefa] text-slate-900">
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-        {/* BANNER DE ALERTA DINÂMICO ESTILO BIG TECH (COM ESPAÇAMENTO E RESPIRAÇÃO) */}
-        {firstAlert ? (
-          <div className="pt-6 sm:pt-8">
-            <div
-              onClick={() => navigate('/status')}
-              className="p-5 sm:p-6 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 border border-amber-200/80 rounded-2xl shadow-xs hover:shadow-md transition-all cursor-pointer group relative"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                    ALERTA OPERACIONAL
-                  </span>
-                  <span className="text-xs text-amber-800/80 font-medium hidden sm:inline">
-                    Capitania dos Portos da Bahia
-                  </span>
+        {/* BANNER DE ALERTA DINÂMICO OU STATUS REGULAR */}
+        {hasActiveAlerts ? (
+          !isDismissed && firstAlert ? (
+            <div className="pt-6 sm:pt-8 animate-fade-in">
+              <div
+                onClick={() => navigate('/status')}
+                className="p-5 sm:p-6 bg-gradient-to-r from-amber-50 via-orange-50/60 to-amber-50 border border-amber-200/80 rounded-2xl shadow-xs hover:shadow-md transition-all cursor-pointer group relative"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                      ALERTA OPERACIONAL
+                    </span>
+                    <span className="text-xs text-amber-800/80 font-medium hidden sm:inline">
+                      Capitania dos Portos da Bahia
+                    </span>
+                  </div>
+
+                  <div className="flex items-center space-x-4">
+                    <span className="text-xs sm:text-sm font-bold text-amber-900 group-hover:text-amber-700 flex items-center gap-1.5">
+                      <span>Ver orientações completas</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDismiss}
+                      title="Dispensar aviso"
+                      className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-black/5 transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <span className="text-xs sm:text-sm font-bold text-amber-900 group-hover:text-amber-700 flex items-center gap-1.5">
-                    <span>Ver orientações completas</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleDismiss}
-                    title="Dispensar aviso"
-                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-800 hover:bg-black/5 transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                <div className="mt-3.5">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+                    Viagem Suspensa: {firstAlert.route}
+                  </h3>
+                  <p className="text-sm text-slate-700 mt-1 leading-relaxed max-w-3xl">
+                    Saída das <strong>{firstAlert.affected_time}</strong> cancelada: {firstAlert.reason}
+                  </p>
                 </div>
-              </div>
 
-              <div className="mt-3.5">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-                  Viagem Suspensa: {firstAlert.route}
-                </h3>
-                <p className="text-sm text-slate-700 mt-1 leading-relaxed max-w-3xl">
-                  Saída das <strong>{firstAlert.affected_time}</strong> cancelada: {firstAlert.reason}
-                </p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-amber-200/60 flex items-center justify-between text-xs text-amber-900 font-medium">
-                <span className="flex items-center gap-2">
-                  <Waves className="w-4 h-4 text-amber-600" />
-                  Reembolso integral garantido ou remarcação sem custo no terminal.
-                </span>
-                <span className="underline font-bold text-amber-950">Toque para detalhes</span>
+                <div className="mt-4 pt-3 border-t border-amber-200/60 flex items-center justify-between text-xs text-amber-900 font-medium">
+                  <span className="flex items-center gap-2">
+                    <Waves className="w-4 h-4 text-amber-600" />
+                    Reembolso integral garantido ou remarcação sem custo no terminal.
+                  </span>
+                  <span className="underline font-bold text-amber-950">Toque para detalhes</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : null
         ) : (
           <div className="pt-6 sm:pt-8">
             <div
