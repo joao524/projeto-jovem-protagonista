@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#07395c"/>
+  <!-- Anel superior da âncora em Teal -->
+  <circle cx="16" cy="9.5" r="2.5" stroke="#318a91" stroke-width="2"/>
+  <!-- Haste central e cruzeta em Mint/Branco -->
+  <line x1="16" y1="12" x2="16" y2="24" stroke="#ecf5f0" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="10.5" y1="15" x2="21.5" y2="15" stroke="#ecf5f0" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Braços e patas curvadas da âncora em Laranja TTNB -->
+  <path d="M8.5 18.5C8.5 23.5 12.5 26 16 26C19.5 26 23.5 23.5 23.5 18.5" stroke="#ed7837" stroke-width="2.2" stroke-linecap="round"/>
+</svg>
