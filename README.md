@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <em>Conectando Salvador ⇄ Mar Grande (Ilha de Itaparica) e Salvador ⇄ Morro de São Paulo com fidelidade pixel-perfect ao protótipo do Figma, segurança criptográfica e alta performance.</em>
+  <em>Conectando Salvador ⇄ Mar Grande (Ilha de Itaparica) e Salvador ⇄ Morro de São Paulo com alta performance, design moderno e segurança criptográfica.</em>
 </p>
 
 [Visão Geral](#-visão-geral) • [Destaques de Engenharia](#-destaques-de-engenharia) • [Arquitetura](#-arquitetura-do-sistema) • [Módulos & Funcionalidades](#-módulos--funcionalidades) • [Como Executar](#-como-executar) • [Testes Automatizados](#-testes-automatizados)
@@ -144,12 +144,12 @@ Projeto_Jovem_Protagonista_Antigravity/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/         # Navbar acessível, Drawer 01-08, PageSkeleton, Toast
-│   │   ├── pages/              # 16 telas implementadas com fidelidade total ao Figma
+│   │   ├── pages/              # 16 telas implementadas para todos os fluxos da plataforma
 │   │   ├── services/           # Cliente Axios configurado com interceptores
 │   │   ├── utils/              # Armazenamento seguro e helpers
 │   │   ├── App.tsx             # Roteador com Code Splitting (React.lazy)
 │   │   └── main.tsx            # Ponto de entrada da SPA
-│   ├── tailwind.config.js      # Paleta TTNB extraída do Figma e extensões utilitárias
+│   ├── tailwind.config.js      # Paleta oficial TTNB e extensões utilitárias
 │   ├── vite.config.ts          # Configuração de build e divisão de chunks de vendor
 │   └── package.json
 │
