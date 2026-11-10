@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { NavigationDrawer } from './components/NavigationDrawer';
 import { ToastProvider } from './components/Toast';
@@ -42,6 +42,7 @@ const ScrollToTop: React.FC = () => {
 const AppContent: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Handlers estáveis: evitam re-registrar listeners do Drawer a cada render
   const openMenu = useCallback(() => setIsMenuOpen(true), []);
@@ -58,6 +59,38 @@ const AppContent: React.FC = () => {
     return 'Voltar';
   };
 
+  const handleNavbarBack = useCallback(() => {
+    const path = location.pathname;
+    if (
+      path.startsWith('/horarios') ||
+      path.startsWith('/bilhete') ||
+      path.startsWith('/filometro') ||
+      path.startsWith('/previsao-tempo') ||
+      path.startsWith('/noticias') ||
+      path.startsWith('/status') ||
+      path.startsWith('/minha-conta') ||
+      path.startsWith('/passageiro') ||
+      path.startsWith('/login') ||
+      path.startsWith('/cadastro')
+    ) {
+      navigate('/');
+      return;
+    }
+    if (path.startsWith('/reserva')) {
+      navigate('/horarios');
+      return;
+    }
+    if (path.startsWith('/identificacao') || path.startsWith('/checkout')) {
+      navigate(-1);
+      return;
+    }
+    if (path.startsWith('/pagamento')) {
+      navigate(-1);
+      return;
+    }
+    navigate('/');
+  }, [location.pathname, navigate]);
+
   return (
     <div className="min-h-screen bg-[#fffefa] text-slate-900 font-sans antialiased selection:bg-ttnb-orange selection:text-white">
       <ScrollToTop />
@@ -71,7 +104,12 @@ const AppContent: React.FC = () => {
       </a>
 
       {/* Navbar Global com Identidade TTNB */}
-      <Navbar onOpenMenu={openMenu} showBack={!isHome} backTitle={getBackTitle()} />
+      <Navbar
+        onOpenMenu={openMenu}
+        showBack={!isHome}
+        backTitle={getBackTitle()}
+        onBack={handleNavbarBack}
+      />
 
       {/* Drawer de Navegação 01 a 08 */}
       <NavigationDrawer isOpen={isMenuOpen} onClose={closeMenu} />

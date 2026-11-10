@@ -38,6 +38,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleBack = () => {
     if (onBack) {
       onBack();
+    } else if (
+      backTitle.toLowerCase().includes('início') ||
+      backTitle.toLowerCase().includes('inicio')
+    ) {
+      navigate('/');
     } else {
       navigate(-1);
     }
