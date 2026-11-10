@@ -328,23 +328,29 @@ export const BookingPage: React.FC = () => {
                 <p className="text-xs text-slate-500">Tarifa regular • A partir de 12 anos</p>
               </div>
 
-              <div className="flex items-center space-x-3 bg-slate-50 border border-slate-200 p-1.5 rounded-xl">
+              <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={handleDecrement}
                   disabled={passengerCount <= 1}
-                  className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  aria-label="Remover um passageiro"
+                  className="w-11 h-11 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="text-base font-black text-slate-900 w-6 text-center">
+                <span
+                  className="text-base font-black text-slate-900 w-7 text-center tabular-nums"
+                  aria-live="polite"
+                  aria-label={`${passengerCount} passageiro(s)`}
+                >
                   {passengerCount}
                 </span>
                 <button
                   type="button"
                   onClick={handleIncrement}
                   disabled={passengerCount >= 10}
-                  className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer shadow-2xs"
+                  aria-label="Adicionar um passageiro"
+                  className="w-11 h-11 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                 >
                   <Plus className="w-4 h-4" />
                 </button>

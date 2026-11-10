@@ -89,7 +89,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawer-menu-title"
+    >
       {/* Backdrop com desfoque e escurecimento */}
       <div
         onClick={onClose}
@@ -100,12 +105,14 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       <div className="absolute inset-y-0 left-0 w-80 sm:w-88 max-w-[85vw] bg-white shadow-2xl flex flex-col justify-between p-6 overflow-y-auto animate-in slide-in-from-left duration-200 z-10">
         <div>
           {/* Header do Drawer: Título MENU e botão Fechar X */}
-          <div className="flex items-center justify-between pb-3">
-            <h2 className="text-xl font-black tracking-tight text-slate-900">MENU</h2>
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h2 id="drawer-menu-title" className="text-xl font-black tracking-tight text-slate-900">
+              MENU
+            </h2>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-              aria-label="Fechar menu"
+              className="w-11 h-11 flex items-center justify-center text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Fechar menu de navegação"
             >
               <X className="w-5 h-5" />
             </button>

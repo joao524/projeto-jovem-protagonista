@@ -113,9 +113,14 @@ export const PixPaymentPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="max-w-xl mx-auto min-h-[70vh] flex flex-col items-center justify-center text-slate-500 space-y-3">
-        <div className="w-8 h-8 border-3 border-ttnb-teal border-t-transparent rounded-full animate-spin"></div>
+      <div
+        className="max-w-xl mx-auto min-h-[70vh] flex flex-col items-center justify-center text-slate-500 space-y-3"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="w-10 h-10 border-3 border-ttnb-teal border-t-transparent rounded-full animate-spin"></div>
         <p className="text-sm font-medium">Gerando QR Code Pix instantâneo...</p>
+        <span className="sr-only">Aguarde, gerando cobrança Pix</span>
       </div>
     );
   }

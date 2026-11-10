@@ -225,6 +225,10 @@ export const HomePage: React.FC<HomePageProps> = () => {
                 <img
                   src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80"
                   alt="Travessia Náutica Salvador"
+                  loading="lazy"
+                  decoding="async"
+                  width="1200"
+                  height="800"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent flex items-end p-6">

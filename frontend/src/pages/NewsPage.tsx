@@ -53,6 +53,10 @@ export const NewsPage: React.FC = () => {
           <img
             src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80"
             alt="Baía de Todos os Santos"
+            loading="lazy"
+            decoding="async"
+            width="1200"
+            height="600"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent flex items-end p-4 sm:p-6">

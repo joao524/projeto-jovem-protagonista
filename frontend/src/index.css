@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* A fonte Inter é carregada via <link> com preconnect no index.html
+   (antes era um @import aqui, que encadeava requisições e bloqueava a renderização). */
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +9,7 @@
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color: #111827;
   background-color: #fffefa;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -15,6 +17,99 @@ body {
   min-height: 100vh;
   background-color: #fffefa;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== Acessibilidade: foco visível só para teclado ===== */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #318a91;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ===== Animações (equivalentes ao tailwindcss-animate, que não está instalado) ===== */
+@layer utilities {
+  .animate-in {
+    animation-duration: 200ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: both;
+  }
+  .fade-in,
+  .animate-fade-in {
+    animation-name: ttnb-fade-in;
+  }
+  .animate-fade-in {
+    animation-duration: 250ms;
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+  }
+  .slide-in-from-left {
+    animation-name: ttnb-slide-in-left;
+  }
+  .slide-in-from-top-2 {
+    animation-name: ttnb-slide-in-top;
+  }
+  .zoom-in-95 {
+    animation-name: ttnb-zoom-in;
+  }
+
+  /* Skeleton loader com brilho */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: #eef2f5;
+    border-radius: 0.75rem;
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    animation: ttnb-shimmer 1.4s infinite;
+  }
+
+  /* Respeita o "safe area" de iPhones com notch nas barras fixas inferiores */
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+@keyframes ttnb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ttnb-slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes ttnb-slide-in-top {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ttnb-zoom-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes ttnb-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ===== Usuários que pedem menos movimento no sistema operacional ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Custom scrollbars and utility classes */
