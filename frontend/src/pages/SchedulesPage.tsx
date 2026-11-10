@@ -266,9 +266,9 @@ export const SchedulesPage: React.FC = () => {
             return (
               <div
                 key={trip.id}
-                className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-ttnb-blue hover:shadow-md transition-all flex items-center justify-between group"
+                className="p-4 sm:p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-ttnb-blue hover:shadow-md transition-all flex items-center justify-between gap-3 group"
               >
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <div className="flex items-center gap-2.5">
                     <span className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-ttnb-blue transition-colors">
                       {trip.time}
@@ -294,7 +294,7 @@ export const SchedulesPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-col items-end gap-2 shrink-0">
                   <span className="text-lg font-black text-slate-900">
                     R$ {priceNum.toFixed(2).replace('.', ',')}
                   </span>

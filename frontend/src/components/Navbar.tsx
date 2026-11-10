@@ -156,10 +156,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Comprar passagem</span>
           </button>
 
-          {/* Botão Menu Hamburger com Design Minimalista */}
+          {/* Botão Menu Hamburger com Design Minimalista e Touch Target WCAG AA (44x44px) */}
           <button
             onClick={onOpenMenu}
-            className="w-10 h-10 rounded-full hover:bg-slate-100/90 active:scale-95 transition-all flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
+            className="w-11 h-11 rounded-full hover:bg-slate-100/90 active:scale-95 transition-all flex items-center justify-center text-slate-700 hover:text-slate-900 cursor-pointer"
             aria-label="Abrir Menu de Navegação"
             title="Abrir Menu"
           >
